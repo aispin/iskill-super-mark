@@ -1,6 +1,6 @@
 ---
 name: iskill-super-mark
-description: 把微信（视频号/公众号）里随手转发收藏的内容，变成一本可检索、可分类、有洞察的个人「收藏册」网页应用。提供 init/ingest/add/analyze/build/report/preview 七个命令：初始化实例、批量导入微信聊天记录、单条追加、AI 逐条分类打标（标题/摘要/要点/分类/标签/价值类型/是否可行动）、生成运行时数据、控制台摘要、本地预览。交付物是零外部依赖的纯静态站点（杂志编辑风、手机优先、file:// 双击即开）。当用户说「整理我收藏的微信内容」「把转发的视频号做个知识库」「收藏册」「super mark」「分析我转发的链接」时使用。
+description: 把微信（视频号/公众号）里随手转发收藏的内容，变成一本可检索、可分类、有洞察的个人「收藏册」网页应用。提供 init/ingest/add/analyze/build/report/preview/fetch/transcribe/deep/caps 十一个命令：初始化实例、批量导入聊天记录、单条追加、AI 分类打标、生成运行时数据、控制台摘要、本地预览、抓取视频音频（yt-dlp + 视频号插件，转 mp3）、本地语音转写（VoiceBox / whisper）、基于转写稿的深度解读、能力体检。交付物是零外部依赖的纯静态站点（版式照搬 Netflix Media Center：渐变 Hero + 精选海报行 + 4 列 2:3 竖版海报网格；手机优先、file:// 双击即开）。当用户说「整理我收藏的微信内容」「把转发的视频号做个知识库」「收藏册」「super mark」「分析我转发的链接」「把视频转成文字再分析」时使用。
 agent_created: true
 ---
 
@@ -8,7 +8,9 @@ agent_created: true
 
 把「微信里随手转发的碎片内容」变成「可检索、可分类、可回看、有洞察的私人知识库」。
 
-**核心设计：事实层与分析层分离。** `raw.json` 只增不改，`enrich.json` 增量累积，用户标注存在浏览器本地。重跑分析不会丢标注，也不会重复消耗成本。
+**核心设计：事实层与分析层分离。** `raw.json`（原文）→ `transcripts.json`（音频转写稿）→ `enrich.json`（分类打标）→ `deep.json`（深度解读），每一层都按 id 增量累积、只增不改；用户标注存在浏览器本地。重跑任何一层都不会丢数据，也不会重跑已完成的条目。
+
+**分析深度的分水岭**：只看标题和描述，AI 只能复述；**有了音频转写稿，才能读出讲者的真实论点、方法步骤、具体数据**。所以 `fetch → transcribe → deep` 这条链是本 skill 的核心能力，不是可选项。
 
 ## 何时用
 - 用户把微信聊天记录（转发到文件传输助手/WorkBuddy 任务对话的）丢过来，想整理归类。
@@ -29,12 +31,17 @@ agent_created: true
     app.js              路由、事件委托、入场编排、主题切换
   data/
     raw.json            事实层：解析后的原始条目（只增不改）
+    transcripts.json    事实层扩展：音频转写稿（按 id，逐条落盘）
     enrich.json         分析层：AI 产出的分类打标（按 id 增量）
+    deep.json           分析层扩展：基于转写稿的深度解读（按 id 增量）
     pending.json        analyze 导出的待分析清单
+    pending-deep.json   deep 导出的待深读清单（含转写稿全文）
     taxonomy.json       分类体系（可手工编辑；空数组=用默认）
     marks.js            运行时数据 window.SUPERMARK_DATA（build 产物）
     marks.json          同上，交换/导出用
     stats.js            预聚合统计 window.SUPERMARK_STATS
+  media/                抓到的音频（<id>.mp3），深度分析的事实来源
+  inbox/                手工投放区：录屏/下载的 mp4 放这里，fetch 会自动认领
 ```
 
 ## 在 WorkBuddy 聊天窗口中调用（重要）
@@ -56,6 +63,10 @@ agent_created: true
 | 导入 / 入库 / 解析这段聊天记录 | `ingest <dir> --file <txt>`（或 `--stdin`） |
 | 记一条 / 加这条链接 | `add <dir> "<内容>"` |
 | 分析 / 分类 / 打标 | `analyze <dir>` |
+| 深读 / 深入分析 / 这条视频讲了什么 | `deep <dir>` |
+| 抓音频 / 把视频转成语音 | `fetch <dir>` |
+| 转文字 / 听写 / 转写 | `transcribe <dir>` |
+| 本机能不能抓/能不能转写 | `caps` |
 | 构建 / 生成页面数据 / 刷新 | `build <dir>` |
 | 看看现在多少条 / 还有多少没分析 | `report <dir>` |
 | 预览 / 打开看看 | `preview <dir>` |
@@ -83,6 +94,75 @@ agent_created: true
 - 医疗/投资类观点保持中立表述，必要时加「不构成建议」。
 - `confidence` < 0.6 的条目会进 report 的「建议复核」。
 
+## 深度分析管线：fetch → transcribe → deep（核心能力）
+
+只看标题和描述，AI 只能复述；**只有拿到音频转写稿，才能做真正的深读**。所以对视频类收藏，标准流程是三层递进。
+
+### 1. `fetch <dir>` — 拿到音频
+
+按可靠性降级，每一步失败就退下一步：
+
+| 层级 | 手段 | 适用 |
+| --- | --- | --- |
+| 0 | `inbox/` 手工投放 | 用户已把录屏 mp4 丢进 `inbox/`（文件名以条目 id 开头即可），自动认领并抽音轨 |
+| 1 | `yt-dlp -x --audio-format mp3` | YouTube / B站 / 小红书 / 抖音 / 西瓜等（**实测 B站 可直接成功**） |
+| 2 | 浏览器嗅探直链 | 用无头 Chrome 打开页面，抓 `.m3u8/.mp4/.m4a` 请求，再交 ffmpeg 下载 |
+| 3 | 带登录态 cookies | 视频号需要：`--cookies-from-browser chrome` 或 `--cookies <cookies.txt>` |
+| 4 | 系统音频录制 | 需虚拟声卡（BlackHole/Loopback），本机没有，暂未实现 |
+
+**微信视频号（`weixin.qq.com/sph/*`）的音频获取，两条路（务必跟用户说清楚，登录态那步必须由用户本人完成）：**
+
+- **路线 A：带登录态 cookies（最省事，需用户登录）**
+  - 已装 `yt-dlp-patch` 插件（提供 `wppilot:channels` 提取器），但**必须有登录态的 cookies**（含 `.tencent.com` 域）才能解析。
+  - 助手可以**帮用户打开微信网页登录页**（如 `open https://weixin.qq.com`，或对应浏览器），用户手机扫码登录后，跑 `fetch --cookies-from-browser <浏览器>`。
+  - 浏览器可选：`chrome` / `edge` / `arc` / `safari` / `chromium` 等（=`yt-dlp --cookies-from-browser` 支持的任一个），**必须与用户实际登录 WeChat 网页的那个浏览器一致**。macOS 上 Chrome 系读 cookie 可能需要授权访问钥匙串（弹窗点允许）。
+  - 若 cookies 抓取仍失败（防盗链 / 解密权限），退回路线 B。
+- **路线 B（最稳，强烈推荐）：录屏丢 `inbox/`**
+  - 内容本来就在微信里，让用户把视频录屏（iOS 控制中心录屏 / QuickTime / OBS）成 mp4，**文件名以条目 id 开头**放进 `inbox/`，再跑 `fetch`（自动认领并抽音轨）。零依赖、零授权、成功率最高。
+
+参数：`--id <id>` 单条 ｜ `--limit N` ｜ `--all` 含已有 ｜ `--force` 重抓 ｜
+`--file <mp4> --id <id>` 手工投放 ｜ `--cookies-from-browser chrome` ｜ `--cookies <file>`
+
+### 2. `transcribe <dir>` — mp3 → 文字稿
+
+引擎按「本机已有即用」自动探测，全程离线，音频不出机器：
+
+1. **VoiceBox 本地服务（首选，中文效果好）**——`/Applications/Voicebox.app`，REST `/health` 体检、MCP（Streamable HTTP，`http://127.0.0.1:17493/mcp`）暴露 `voicebox.transcribe`。
+   - 底层是本地 Whisper（默认 `turbo` 模型，可用 `VOICEBOX_MODEL` 改 `base|small|medium|large`），**中文原生支持**。
+   - 调 `voicebox.transcribe` 时直接传 `audio_path`（本地绝对路径），**不上传、无大小上限之忧**；首次调用会自动下载 Whisper 模型（提示「正在下载」时稍等重试）。
+   - 本机已实测：中文语音转写准确（同音字偶有误，真实人声更好）。
+2. **mlx-whisper**（Apple Silicon，`pip install mlx-whisper`）—— 备选中文引擎，首次运行下载模型。
+3. `whisper-cli`（whisper.cpp）／`whisper`（openai-whisper）。
+4. **VoiceStudio 本地 MCP**（`http://localhost:3900/mcp`）—— **仅英文兜底**：其实测默认引擎是英文模型、`language` 参数被忽略，中文不稳。走 `audio_base64` 通道（绕过其 `audio_path` 安全闸），超 6MB 自动 ffmpeg 分片。
+
+参数：`--id` ｜ `--limit N`（默认 3，转写慢，别一次太多）｜ `--redo` ｜ `--lang zh` ｜ `--engine voicebox|whisper|voicestudio`
+
+结果逐条写入 `data/transcripts.json`，中断不丢已完成的。
+
+### 3. `deep <dir>` — 基于转写稿产出深度解读
+
+和 `analyze` 一样是「脚本出清单 + 提示词，助手产出 JSON 回填」：
+
+1. `deep <dir>`（`--limit 6`，`--chars 7000` 控制每条塞进上下文的转写稿长度）→ 输出提示词 + 待深读清单（含转写稿全文，写入 `data/pending-deep.json`）。
+2. **助手逐条产出 JSON** 写入 `<实例>/data/deep-N.json`。
+3. `deep <dir> --apply <deep-N.json>` 合并进 `deep.json`，然后 `build <dir>`。
+
+**每条深读的字段（与 analyze 刻意区分开，不重复标题/摘要）：**
+```json
+{"id":"...",
+ "thesis":"核心论点（不是「介绍了…」，要说出讲者到底主张什么）",
+ "steps":["方法/流程，2-6 条能照着做的"],
+ "facts":["稿子里出现的具体数字、工具名、书名、案例"],
+ "takeaway":"对我最有价值的一条结论，具体、可执行、能改变做法",
+ "caveats":["讲者的前提假设、过时之处、我不同意的地方"],
+ "related":["与这批收藏里其它条目的关联（写清和哪条、什么关系）"]}
+```
+铁律：**只依据转写稿，禁止脑补稿子里没有的信息**；转写可能有识别错误，按上下文合理理解但不编造事实。这些会渲染进详情页的「深度解读」区块。
+
+### 能力自检
+
+`caps` 一条命令体检全链路（yt-dlp / 视频号插件 / ffmpeg / 无头浏览器 / puppeteer / VoiceBox / whisper CLI），并给出「现在能做到哪一步」的结论。**接手实例时先跑一次。**
+
 ## 分类体系（默认 taxonomy）
 | id | 名称 | id | 名称 |
 | --- | --- | --- | --- |
@@ -95,14 +175,24 @@ agent_created: true
 编辑 `data/taxonomy.json` 可覆盖或新增（写空数组 = 用默认）。
 
 ## Web App 视觉定调（改动样式前先读这段）
-**方向：杂志编辑风（Editorial）——「一本属于你的收藏杂志」。**
+**方向：版式语言照搬 Netflix Media Center（media.netflix.com），配色换成自己的暖黑 + 朱砂。**
 
-- 暖纸色底 `#F4F1E9`（不是纯白），暖近黑文字，唯一强调色朱砂 `#C2410C`；暗色主题用墨底 `#14120F`。
-- 展示字宋体（`Songti SC`）+ 正文黑体（`PingFang SC`）+ 数字等宽（`SF Mono`），**全系统字体栈、零网络依赖**。禁用 Inter/Roboto/system-ui 等通用字体。
-- 条目用**发丝规则线分隔 + 左侧分类色条 + 等宽编号 `No.001`**，不是统一圆角的卡片堆。
-- 背景有极细横纹与噪点氛围层；hover 是标题下划线扫过 + 色条变宽，不是单纯变亮。
-- 动效错峰入场（≤8 组），`prefers-reduced-motion` 下全关。
-- 反 AI 味红线：不要三张一样圆角特性卡、不要白底紫渐变、不要无主色的粉彩、不要通用线性图标堆砌。
+照搬的是这五条骨架，别改：
+1. **顶栏**：纯色深色条（`--bar`），左侧品牌（色块 + 站名 + 等宽英文名），右侧文本导航 + **一个实心强调色按钮**（对应 Netflix 的 Apply，本 App 是「▶ 可做 N」，一键跳到可行动项）。
+2. **全幅渐变 Hero**：两团大径向光叠一层线性渐变（`--hero-1/2/3`），**居中大标题 + 居中搜索框**；最新 4 条做成**精选海报行**，压在渐变的下缘。非首页/已筛选时切 `.hero.compact` 收起大标题与精选行。
+3. **栏目标题**：`我收藏的主题 · <span class="accent">10 类</span>` 这种「白字 + 强调色片段」的句式，下方一条 `--accent-dim` 规则线。
+4. **胶囊筛选**：圆角描边胶囊（`.pill`），激活态填充强调色；移动端两行各自单行横滑，别让它吃掉首屏。
+5. **海报网格**：4 列（平板 3 列 / 移动 2 列）。**海报是 2:3 竖版、直角、无阴影、无边框**，下方只跟一行灰字 `分类 · 日期`，像 Netflix 海报只跟一行日期。
+
+**海报怎么来的（关键）**：我们的条目没有图片，所以**把排版当海报**——`posterVars(id, cat)` 以分类色相为家族、按 id 哈希抖动 ±14° 色相生成 `--p1/--p2` 渐变底，叠一层由 id 决定的几何母题（`data-p` 0-5：大圆 / 同心环 / 斜纹 / 扇形 / 网点 / 对角带，颜色 `--pm`），底部压暗保证标题可读，标题用**宋体**排版、字号按字数分五档（`titleSize()`）。同一条内容永远得到同一张海报。
+
+**字体分工**：UI 骨架（顶栏 / Hero 大标题 / 栏目标题 / 按钮）走 **PingFang SC 粗体**（Netflix Sans 的中文对应）；**海报标题走宋体**（海报是「作品」，字体可以跳出来）；数字与元信息走 **SF Mono 等宽 + `tabular-nums`**。全系统字体栈、零网络依赖，禁用 Inter/Roboto/system-ui 作展示字。
+
+**配色**：底 `#12100d`、条 `#0b0a08`、面 `#1a1712`、字 `#f4efe4`、弱 `#9b9284`，唯一强调色朱砂 `#ff5a2b`（只给关键动作）。分类色由 `SM.catColor()` **按主题重新配平**（暗色提亮到 L≈56-68，浅色压到 L≈27-42），所以加新分类只需在 taxonomy 里给一个基础色相，两套主题自动成立。
+
+**动效**：克制。一次错峰淡入（`--i` × 55ms，≤12 组），切筛选不重放；hover 是海报上浮 4px + 阴影，不是发亮。`prefers-reduced-motion` 下全关。
+
+**反 AI 味红线**：不要三张一样圆角特性卡、不要白底紫渐变、不要无表情的统一圆角 + 统一阴影、不要通用线性图标装饰。**所有卡片直角、无阴影**是本方向最容易崩的一处。
 
 ## 存储方案（已调研，勿轻易推翻）
 **不引入 wa-sqlite / OPFS。** 理由：

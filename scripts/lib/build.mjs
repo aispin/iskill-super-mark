@@ -14,6 +14,10 @@ export function buildMarks(dir) {
   const raw = readJson(path.join(dataDir, 'raw.json'), { items: [] });
   const enrichFile = readJson(path.join(dataDir, 'enrich.json'), {});
   const enrich = enrichFile.items || enrichFile;
+  const trFile = readJson(path.join(dataDir, 'transcripts.json'), { items: {} });
+  const tr = trFile.items || trFile;
+  const deepFile = readJson(path.join(dataDir, 'deep.json'), { items: {} });
+  const deep = deepFile.items || deepFile;
   const tax = loadTaxonomy(readJson(path.join(dataDir, 'taxonomy.json'), null));
 
   const marks = raw.items.map((it) => {
@@ -44,6 +48,21 @@ export function buildMarks(dir) {
       actionHint: e.actionHint || '',
       confidence: typeof e.confidence === 'number' ? e.confidence : 0,
       enriched: !!e.title,
+      // 事实层扩展：音频转写稿（有音频才有）
+      transcript: tr[it.id]?.text
+        ? { text: tr[it.id].text, engine: tr[it.id].engine, durationSec: tr[it.id].durationSec || 0, audioPath: tr[it.id].audioPath || '' }
+        : null,
+      // 分析层扩展：基于转写稿的深度解读
+      deep: deep[it.id] && (deep[it.id].thesis || (deep[it.id].steps || []).length)
+        ? {
+          thesis: deep[it.id].thesis || '',
+          steps: deep[it.id].steps || [],
+          facts: deep[it.id].facts || [],
+          takeaway: deep[it.id].takeaway || '',
+          caveats: deep[it.id].caveats || [],
+          related: deep[it.id].related || [],
+        }
+        : null,
     };
   });
 
@@ -62,6 +81,8 @@ export function buildStats(marks, tax, enrichPending = 0) {
   const heat = Array.from({ length: 7 }, () => new Array(24).fill(0));
   let actionable = 0;
   let withUrl = 0;
+  let transcribed = 0;
+  let deepened = 0;
 
   for (const m of marks) {
     bump(byCategory, m.category);
@@ -77,6 +98,8 @@ export function buildStats(marks, tax, enrichPending = 0) {
     for (const t of [...(m.tags || []), ...(m.rawTags || [])]) bump(tagCount, t);
     if (m.actionable) actionable += 1;
     if (m.url) withUrl += 1;
+    if (m.transcript?.text) transcribed += 1;
+    if (m.deep) deepened += 1;
   }
 
   const toList = (obj, extra = {}) =>
@@ -96,6 +119,8 @@ export function buildStats(marks, tax, enrichPending = 0) {
     pending: enrichPending,
     actionable,
     withUrl,
+    transcribed,
+    deepened,
     spanDays: times.length ? Math.max(1, Math.round((times[times.length - 1] - times[0]) / 86400000) + 1) : 0,
     firstAt: times.length ? new Date(times[0]).toISOString() : '',
     lastAt: times.length ? new Date(times[times.length - 1]).toISOString() : '',
