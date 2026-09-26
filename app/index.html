@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>收藏册 · super-mark</title>
+<meta name="theme-color" content="#f4f1e9">
+<meta name="description" content="把微信里随手收藏的内容，变成一本可检索、可分类、有洞察的个人收藏册。">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-top">
+    <div class="brand">
+      <h1>收藏册</h1>
+      <span class="en">super&nbsp;mark</span>
+    </div>
+    <div class="masthead-meta">
+      <span id="meta"></span>
+      <button class="iconbtn" id="theme" title="切换明暗" aria-label="切换明暗">☾</button>
+    </div>
+  </div>
+  <nav class="nav">
+    <a href="#/flow">时间流</a>
+    <a href="#/topic">主题</a>
+    <a href="#/insight">洞察</a>
+    <span class="spacer"></span>
+    <span id="count" style="font-family:var(--font-mono);font-size:var(--t-xs);color:var(--muted);font-variant-numeric:tabular-nums"></span>
+  </nav>
+</header>
+
+<main class="wrap">
+  <div class="toolbar" id="toolbar"></div>
+  <div id="view"><div class="loading">正在翻阅收藏册…</div></div>
+</main>
+
+<script src="data/marks.js"></script>
+<script src="assets/data.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/filter.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/views.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
