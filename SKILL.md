@@ -100,23 +100,24 @@ agent_created: true
 
 ### 1. `fetch <dir>` — 拿到音频
 
-按可靠性降级，每一步失败就退下一步：
+抓取/转写引擎已抽离为独立 skill **`iskill-media-transcribe`**（`lib/engine.mjs` 动态加载，`MEDIA_TRANSCRIBE_HOME` 可覆盖路径）。按可靠性降级：
 
 | 层级 | 手段 | 适用 |
 | --- | --- | --- |
 | 0 | `inbox/` 手工投放 | 用户已把录屏 mp4 丢进 `inbox/`（文件名以条目 id 开头即可），自动认领并抽音轨 |
-| 1 | `yt-dlp -x --audio-format mp3` | YouTube / B站 / 小红书 / 抖音 / 西瓜等（**实测 B站 可直接成功**） |
-| 2 | 浏览器嗅探直链 | 用无头 Chrome 打开页面，抓 `.m3u8/.mp4/.m4a` 请求，再交 ffmpeg 下载 |
-| 3 | 带登录态 cookies | 视频号需要：`--cookies-from-browser chrome` 或 `--cookies <cookies.txt>` |
-| 4 | 系统音频录制 | 需虚拟声卡（BlackHole/Loopback），本机没有，暂未实现 |
+| 1 | yt-dlp 下载视频 → ffmpeg 抽音轨 | YouTube / B站 / 小红书 / 抖音 / 西瓜等；mp4 默认抽完即删（`--keep-video` 保留到 `media/video/`） |
+| 2 | 带登录态 cookies | 视频号需要元宝(tencent.com)会话：`--cookies <cookies.txt>`；sph 链接自动走 `--weixin`（`WEIXIN_COOKIE_FILE`，默认 `./weixin_cookies.txt`） |
+
+> 原实现的"浏览器嗅探直链"已随引擎抽离移除：对视频号(blob:)零价值且曾把整批抓取带崩；其它平台失败时走 inbox 兜底即可。
 
 **微信视频号（`weixin.qq.com/sph/*`）的音频获取，两条路（务必跟用户说清楚，登录态那步必须由用户本人完成）：**
 
-- **路线 A：带登录态 cookies（最省事，需用户登录）**
-  - 已装 `yt-dlp-patch` 插件（提供 `wppilot:channels` 提取器），但**必须有登录态的 cookies**（含 `.tencent.com` 域）才能解析。
-  - 助手可以**帮用户打开微信网页登录页**（如 `open https://weixin.qq.com`，或对应浏览器），用户手机扫码登录后，跑 `fetch --cookies-from-browser <浏览器>`。
-  - 浏览器可选：`chrome` / `edge` / `arc` / `safari` / `chromium` 等（=`yt-dlp --cookies-from-browser` 支持的任一个），**必须与用户实际登录 WeChat 网页的那个浏览器一致**。macOS 上 Chrome 系读 cookie 可能需要授权访问钥匙串（弹窗点允许）。
-  - 若 cookies 抓取仍失败（防盗链 / 解密权限），退回路线 B。
+- **路线 A：元宝登录态 cookie（最省事，需用户登录一次）**
+  - 已装 `yt-dlp-patch` 插件（提供 `wppilot:channels` 提取器），解析走**元宝桥接**（`yuanbao.tencent.com`），`wx.qq.com` 网页版登录无效。
+  - 用户在 Chrome 登录 `https://yuanbao.tencent.com`（微信扫码）后导出 cookie：
+    `yt-dlp --cookies-from-browser chrome --cookies weixin_cookies.txt https://example.com`
+  - 然后 `fetch --cookies weixin_cookies.txt`（或把该文件设为 `WEIXIN_COOKIE_FILE`，sph 链接自动使用）。
+  - 桥接偶发 400 已由引擎的 8 次退避重试 + 批量错峰兜住；若仍失败退回路线 B。
 - **路线 B（最稳，强烈推荐）：录屏丢 `inbox/`**
   - 内容本来就在微信里，让用户把视频录屏（iOS 控制中心录屏 / QuickTime / OBS）成 mp4，**文件名以条目 id 开头**放进 `inbox/`，再跑 `fetch`（自动认领并抽音轨）。零依赖、零授权、成功率最高。
 
@@ -125,19 +126,18 @@ agent_created: true
 
 ### 2. `transcribe <dir>` — mp3 → 文字稿
 
-引擎按「本机已有即用」自动探测，全程离线，音频不出机器：
+引擎在 iskill-media-transcribe 内维护，按「本机已有即用」自动探测，全程离线，音频不出机器：
 
-1. **VoiceBox 本地服务（首选，中文效果好）**——`/Applications/Voicebox.app`，REST `/health` 体检、MCP（Streamable HTTP，`http://127.0.0.1:17493/mcp`）暴露 `voicebox.transcribe`。
+1. **whisper CLI（装有则首选，产出逐句时间戳）**——`mlx-whisper`（Apple Silicon 最快，中文好）／`whisper.cpp`／openai-whisper。
+2. **VoiceBox 本地服务（无 whisper CLI 时的主力，中文效果好）**——`/Applications/Voicebox.app`，MCP（Streamable HTTP，`http://127.0.0.1:17493/mcp`）暴露 `voicebox.transcribe`。
    - 底层是本地 Whisper（默认 `turbo` 模型，可用 `VOICEBOX_MODEL` 改 `base|small|medium|large`），**中文原生支持**。
-   - 调 `voicebox.transcribe` 时直接传 `audio_path`（本地绝对路径），**不上传、无大小上限之忧**；首次调用会自动下载 Whisper 模型（提示「正在下载」时稍等重试）。
-   - 本机已实测：中文语音转写准确（同音字偶有误，真实人声更好）。
-2. **mlx-whisper**（Apple Silicon，`pip install mlx-whisper`）—— 备选中文引擎，首次运行下载模型。
-3. `whisper-cli`（whisper.cpp）／`whisper`（openai-whisper）。
-4. **VoiceStudio 本地 MCP**（`http://localhost:3900/mcp`）—— **仅英文兜底**：其实测默认引擎是英文模型、`language` 参数被忽略，中文不稳。走 `audio_base64` 通道（绕过其 `audio_path` 安全闸），超 6MB 自动 ffmpeg 分片。
+   - 调 `voicebox.transcribe` 时直接传 `audio_path`（本地绝对路径），**不上传、无大小上限之忧**。
+   - **已知限制（实测确认）：其 MCP 只回纯文本，无 segments/words 时间戳** → 此时 `transcripts.json` 的 `subtitleTimed` 为 `false`（srt 只能整段单块）。
+3. **VoiceStudio 本地 MCP**（`http://localhost:3900/mcp`）—— **仅英文兜底**：实测默认引擎是英文模型、`language` 参数被忽略，中文不稳。
 
 参数：`--id` ｜ `--limit N`（默认 3，转写慢，别一次太多）｜ `--redo` ｜ `--lang zh` ｜ `--engine voicebox|whisper|voicestudio`
 
-结果逐条写入 `data/transcripts.json`，中断不丢已完成的。
+结果逐条写入 `data/transcripts.json`，中断不丢已完成的；每条含 `subtitleTimed` 标记。
 
 ### 3. `deep <dir>` — 基于转写稿产出深度解读
 
@@ -161,7 +161,7 @@ agent_created: true
 
 ### 能力自检
 
-`caps` 一条命令体检全链路（yt-dlp / 视频号插件 / ffmpeg / 无头浏览器 / puppeteer / VoiceBox / whisper CLI），并给出「现在能做到哪一步」的结论。**接手实例时先跑一次。**
+`caps` 一条命令体检全链路（引擎 iskill-media-transcribe 的路径 / yt-dlp / 视频号插件 / ffmpeg / VoiceBox / whisper CLI），并给出「现在能做到哪一步」的结论。**接手实例时先跑一次。**
 
 ## 分类体系（默认 taxonomy）
 | id | 名称 | id | 名称 |

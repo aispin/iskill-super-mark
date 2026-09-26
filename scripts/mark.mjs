@@ -207,10 +207,14 @@ async function fetchAudio() {
 
   let ok = 0;
   for (const it of todo) {
+    // 视频号 CDN（finder.video.qq.com）对密集请求会偶发 400，条目间错峰 1.5s 降低限频
+    if (todo.indexOf(it) > 0) await new Promise((r) => setTimeout(r, 3000));
     const r = await acquireAudio(it, dir, {
       force: !!flags.force,
       cookiesFromBrowser: typeof flags['cookies-from-browser'] === 'string' ? flags['cookies-from-browser'] : undefined,
       cookiesFile: flags.cookies,
+      weixin: !!flags.weixin,
+      keepVideo: !!flags['keep-video'],
     });
     if (r.ok) {
       ok += 1;
@@ -219,16 +223,16 @@ async function fetchAudio() {
     } else {
       console.log(`✗ ${it.id} ${(it.rawText || '').slice(0, 24)}`);
       console.log(`   原因：${r.reason}`);
-      if (r.sniffed?.length) console.log(`   嗅探到的直链：${r.sniffed.slice(0, 2).join(' , ')}`);
     }
   }
   console.log(`\n成功 ${ok} / ${todo.length}`);
   if (ok < todo.length) {
     console.log(`
 视频号抓不到时的两条路（任选其一）：
-  A) 带登录态 cookies：浏览器登录 channels.weixin.qq.com 后
-     node mark.mjs fetch ${dir} --id <id> --cookies-from-browser chrome
-     或导出 Netscape 格式 cookies 到文件后 --cookies <cookies.txt>
+  A) 元宝登录态（推荐）：Chrome 登录 yuanbao.tencent.com 后导出 cookie，
+     yt-dlp --cookies-from-browser chrome --cookies weixin_cookies.txt https://example.com
+     然后：node mark.mjs fetch ${dir} --id <id> --cookies weixin_cookies.txt
+     （视频号链接自动走元宝桥接；也可显式 --weixin，路径可用环境变量 WEIXIN_COOKIE_FILE 指定）
   B) 最稳：把视频录屏成 mp4 放进 ${path.join(dir, 'inbox')}/（文件名以条目 id 开头），再跑一次 fetch`);
   }
 }
@@ -267,6 +271,7 @@ async function transcribeCmd() {
       store.items[it.id] = {
         text: r.text, engine: r.engine, lang: flags.lang || 'zh',
         durationSec: dur, audioPath: `media/${it.id}.mp3`, at: new Date().toISOString(),
+        subtitleTimed: r.subtitleTimed !== false,
       };
       writeJson(p.transcripts, store); // 逐条落盘，中断也不丢
       console.log(`\r✓ ${it.id} ${r.engine} · ${r.text.length} 字`);
@@ -439,18 +444,16 @@ async function caps() {
   const c = probeCapabilities();
   const a = await probeAsr();
   const mark = (b) => (b ? '✓' : '✗');
-  console.log(`抓音频
+  let engineRoot = '';
+  try { engineRoot = (await probeEngineRoot()) || ''; } catch { /* 打印缺失 */ }
+  console.log(`抓音频（引擎：iskill-media-transcribe${engineRoot ? ' @ ' + engineRoot : ''}）
   ${mark(c.ytdlp)} yt-dlp            ${c.ytdlp || '（未安装）'}${c.ytdlpVersion ? ' · ' + c.ytdlpVersion : ''}
   ${mark(c.weixinSupport)} 视频号解析插件    ${c.weixinSupport ? c.ytdlpPlugins.join(', ') : '（未安装 yt-dlp-patch）'}
   ${mark(c.ffmpeg)} ffmpeg            ${c.ffmpeg || '（未安装）'}
-  ${mark(c.browser)} 无头浏览器        ${c.browser ? '可用（用于嗅探媒体直链）' : '（无）'}
-  ${mark(c.puppeteer)} puppeteer         ${c.puppeteer ? '可用' : '（无）'}
-  ${mark(c.virtualAudio)} 虚拟声卡          ${c.virtualAudio || '（无，不影响主流程）'}
 
 转写
   ${mark(a.voicebox)} VoiceBox          ${a.voicebox ? a.voicebox.status + ' · ' + a.voicebox.url : '（未运行）'}
-  ${mark(a.whisperCli)} whisper CLI       ${a.whisperCli || '（未安装）'}
-  ${mark(a.voicestudio)} VoiceStudio       ${a.voicestudio ? a.voicestudio.status.slice(0, 50) : '（未运行，且其默认 ASR 多为英文模型）'}
+  ${mark(a.whisperCli)} whisper CLI       ${a.whisperCli || '（未安装；装 mlx-whisper 可得逐句时间戳 srt）'}
 
 结论：${a.ready ? '可以跑完整链路（fetch → transcribe → deep）' : '转写引擎缺失，打开 VoiceBox 即可（本地 Whisper，中文效果好）'}`);
 }
@@ -468,7 +471,9 @@ function help() {
   analyze <dir> --apply <json>   合并 AI 回填的分析结果
   fetch <dir>                    抓音频：链接 → media/<id>.mp3（--id / --limit / --all / --force）
                                  --file <mp4> --id <id>  手工投放录屏
-                                 --cookies-from-browser chrome  带登录态抓视频号
+                                 --cookies <cookies.txt> / --cookies-from-browser chrome  带登录态抓视频号
+                                 --weixin  显式走元宝 cookie（视频号自动识别，默认 WEIXIN_COOKIE_FILE）
+                                 --keep-video  保留下载的 mp4 到 media/video/（默认抽完即删）
   transcribe <dir>               mp3 → 文字稿（--id / --limit / --redo / --lang zh / --engine）
   deep <dir>                     输出待深读清单与提示词（基于转写稿，--limit / --chars）
   deep <dir> --apply <json>      合并深度解读结果

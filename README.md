@@ -18,16 +18,16 @@
 
 ```
 链接 ──fetch──▶ media/<id>.mp3 ──transcribe──▶ transcripts.json ──deep──▶ deep.json
-            yt-dlp 直取            本地 ASR          文字稿           深度解读
-            浏览器嗅探兜底
+            yt-dlp 下载→抽音轨      本地 ASR          文字稿           深度解读
             inbox 录屏兜底
 ```
 
-- **`fetch`**：yt-dlp（含 `yt-dlp-patch` 插件，支持视频号）→ 无头浏览器嗅探 `.m3u8/.mp4` 直链 → `inbox/` 手工投放录屏。B站等平台实测可直接抓通。
-- **`transcribe`**：VoiceStudio 本地 MCP（走 `audio_base64`，绕开它的路径安全闸）→ mlx-whisper → whisper.cpp。>6MB 自动分片。
+- **抓取/转写引擎已抽离为独立 skill [`iskill-media-transcribe`](../iskill-media-transcribe/)**（super-mark 通过 `lib/engine.mjs` 动态加载，路径可用 `MEDIA_TRANSCRIBE_HOME` 覆盖）。
+- **`fetch`**：yt-dlp 下载视频（含 `yt-dlp-patch` 插件，视频号走元宝桥接，自动识别 sph 链接）→ ffmpeg 抽音轨 → mp4 抽完即删（`--keep-video` 可保留到 `media/video/`）→ `inbox/` 手工投放录屏仍是最稳兜底。
+- **`transcribe`**：VoiceBox 本地 Whisper（MCP `audio_path` 直读本地文件）为主；装了 whisper CLI（mlx-whisper）则自动优先、产出逐句时间戳。音频全程不出机器。
 - **`deep`**：把转写稿喂给 AI，产出「核心论点 / 方法步骤 / 关键信息 / 可落地的结论 / 局限与保留 / 与已有收藏的关联」，渲染进详情页。
 
-> 视频号链接需要登录态 cookies；抓不到时**最稳的路是录屏丢进 `inbox/`**，零依赖零授权。详见 `SKILL.md`。
+> 视频号链接需要元宝(tencent.com)登录态 cookie；抓不到时**最稳的路是录屏丢进 `inbox/`**，零依赖零授权。详见 `SKILL.md`。
 
 ## 快速开始
 
@@ -93,8 +93,9 @@ scripts/lib/
   dedupe.mjs                    去重键与增量合并
   taxonomy.mjs                  分类体系
   build.mjs                     合并四层数据 → 运行时产物
-  audio.mjs                     音频抓取：yt-dlp / 浏览器嗅探 / inbox 兜底
-  asr.mjs                       转写：VoiceStudio MCP / whisper CLI
+  audio.mjs                     适配层：inbox 认领 / 按 id 命名 mp3（引擎在 iskill-media-transcribe）
+  asr.mjs                       适配层：转发引擎转写（VoiceBox / whisper CLI）
+  engine.mjs                    引擎加载器（MEDIA_TRANSCRIBE_HOME 或兄弟目录）
 app/                            Web App 模板（init 时拷进实例）
 docs/requirements.md            需求规格
 examples/wechat-sample.txt      真实样本（96 条）
