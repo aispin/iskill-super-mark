@@ -78,9 +78,10 @@ node scripts/mark.mjs caps
 
 ## 技术选择
 
-- **零外部依赖**：无框架、无 CDN、无构建步骤；`file://` 双击 `index.html` 即可打开
-- **PWA（http 部署生效）**：manifest + 程序化生成的全套图标（192/512/maskable/apple-touch-icon）+ Service Worker（壳预缓存 + 数据 SWR）+ 版本更新感知（`build-info.json` 指纹比对 → 可关闭的底部轻提示 → 三步法强刷）。`file://` 下自动降级为纯静态打开，双击可用性不变。配方来自 [`iskill-pwa-guideline`](../iskill-pwa-guideline/)
-- **不用 wa-sqlite / OPFS**：静态托管设不了 COOP/COEP 头，`file://` 下 OPFS 不可用，而本场景写入极轻。数据以 `window.SUPERMARK_DATA` 注入，标注走 localStorage（IndexedDB 可用时自动升级）
+- **技术栈 v2**：React 19 + Tailwind CSS 4 + Motion 13 + Vite 8 + vite-plugin-pwa（均最新版）；vanilla 版保留在 tag `v1.0.0-vanilla`。图表仍为手写 SVG，零图表库依赖
+- **PWA**：manifest + 程序化生成的全套图标（192/512/maskable/apple-touch-icon）+ Service Worker（壳预缓存 + 数据 SWR + 音频 CacheFirst）+ 版本更新感知（`build-info.json` 指纹比对 → 可关闭的底部轻提示 → 三步法强刷）。配方来自 [`iskill-pwa-guideline`](../iskill-pwa-guideline/)
+- **需 http 部署**：ES module 在 `file://` 下被 CORS 拦，v2 起不支持双击打开；数据仍以 `window.SUPERMARK_DATA` 注入（`data/marks.js`，不参与打包指纹），标注走 localStorage（IndexedDB 可用时自动升级）
+- **不用 wa-sqlite / OPFS**：静态托管设不了 COOP/COEP 头，而本场景写入极轻
 - **四层数据全部增量、只增不改**：`raw.json`（原文）→ `transcripts.json`（转写稿）→ `enrich.json`（分类打标）→ `deep.json`（深度解读）。重跑任何一层都不丢数据、不重跑已完成的条目
 - **音频不出机器**：转写默认走本地引擎（VoiceStudio / mlx-whisper）
 

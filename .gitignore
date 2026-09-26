@@ -9,3 +9,4 @@ node_modules/
 *.m4a
 examples/
 examples/
+app/dist/

@@ -1,0 +1,81 @@
+/* 设计令牌与少量复杂组件样式（海报渐变、图表等 Tailwind 不便表达的部分）
+   主题机制：html[data-theme=dark|light]。@theme 里放浅色默认值，
+   深色在 [data-theme=dark] 选择器下覆盖同名变量，工具类自动跟随。 */
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --color-bg: #f6f3ec;
+  --color-panel: #ffffff;
+  --color-ink: #1d1a15;
+  --color-muted: #75705f;
+  --color-rule: #e4dfd2;
+  --color-accent: #e8431a;
+  --color-accent-ink: #fff6ee;
+
+  --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
+  --font-sans: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+}
+
+[data-theme="dark"] {
+  --color-bg: #0b0a08;
+  --color-panel: #14120e;
+  --color-ink: #f4efe4;
+  --color-muted: #8d8778;
+  --color-rule: #26231d;
+  --color-accent: #ff5a2b;
+  --color-accent-ink: #12100d;
+}
+
+html { background: var(--color-bg); color-scheme: light; }
+html[data-theme="dark"] { color-scheme: dark; }
+
+body {
+  @apply bg-bg text-ink font-sans antialiased;
+}
+
+::selection { background: var(--color-accent); color: var(--color-accent-ink); }
+
+/* ---------- 海报卡：2:3 竖版，分类色渐变 + 几何母题 ---------- */
+.poster-card { display: block; position: relative; min-width: 0; }
+.poster-face {
+  aspect-ratio: 2 / 3;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 12px;
+  background:
+    radial-gradient(120% 90% at 85% 0%, var(--p2) 0%, transparent 55%),
+    linear-gradient(160deg, var(--p1) 0%, color-mix(in oklab, var(--p1) 60%, black) 100%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08), 0 10px 30px rgb(0 0 0 / 0.35);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.poster-card:hover .poster-face { transform: translateY(-4px) scale(1.015); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14), 0 18px 40px rgb(0 0 0 / 0.45); }
+
+/* 几何母题：按 data-g 编号切换（0-5），同一条内容永远同一枚 */
+.poster-face::after { content: ""; position: absolute; inset: 0; opacity: .8; pointer-events: none; }
+.poster-face[data-g="0"]::after { background: radial-gradient(circle at 78% 22%, var(--pm) 0 14%, transparent 15%), radial-gradient(circle at 78% 22%, transparent 0 20%, var(--pm) 21% 23%, transparent 24%); }
+.poster-face[data-g="1"]::after { background: conic-gradient(from 210deg at 20% 30%, var(--pm) 0 40deg, transparent 40deg 90deg, var(--pm) 90deg 100deg, transparent 100deg); }
+.poster-face[data-g="2"]::after { background: linear-gradient(115deg, transparent 0 55%, var(--pm) 55% 58%, transparent 58% 70%, var(--pm) 70% 71.5%, transparent 71.5%); }
+.poster-face[data-g="3"]::after { background: repeating-linear-gradient(0deg, transparent 0 18px, var(--pm) 18px 19.5px); mask-image: radial-gradient(90% 70% at 70% 15%, black, transparent 75%); }
+.poster-face[data-g="4"]::after { background: radial-gradient(closest-side at 30% 70%, var(--pm) 0 60%, transparent 62%); clip-path: circle(34% at 30% 70%); }
+.poster-face[data-g="5"]::after { background: linear-gradient(45deg, var(--pm) 25%, transparent 25% 50%, var(--pm) 50% 75%, transparent 75%); background-size: 34px 34px; opacity: .35; }
+
+/* ---------- 手写图表 ---------- */
+.bars { display: flex; align-items: flex-end; gap: 6px; height: var(--h, 168px); }
+.bcol { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; min-width: 0; }
+.bbar { width: 100%; max-width: 34px; border-radius: 3px 3px 0 0; background: linear-gradient(to top, color-mix(in oklab, var(--color-accent) 55%, transparent), var(--color-accent)); height: var(--p); }
+.legend > div { display: grid; grid-template-columns: 10px minmax(72px, auto) 1fr 2.5em; gap: 8px; align-items: center; padding: 4px 0; font-size: 12px; }
+.legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.legend .tr { background: var(--color-rule); border-radius: 2px; height: 8px; overflow: hidden; }
+.legend .tr > span { display: block; height: 100%; border-radius: 2px; }
+
+/* ---------- 杂项 ---------- */
+.tag { border: 1px solid var(--color-rule); border-radius: 999px; padding: 1px 8px; font-size: 11px; color: var(--color-muted); white-space: nowrap; }
+.tag.cat { color: var(--cat, var(--color-muted)); border-color: var(--cat-line, var(--color-rule)); background: var(--cat-soft, transparent); }
+.flag { border: 1px solid color-mix(in oklab, var(--color-accent) 55%, transparent); color: var(--color-accent); border-radius: 999px; padding: 1px 8px; font-size: 11px; white-space: nowrap; }
+.raw { white-space: pre-wrap; font-size: 13px; line-height: 1.8; color: var(--color-muted); max-height: 420px; overflow: auto; }

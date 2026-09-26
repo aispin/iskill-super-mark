@@ -18,17 +18,14 @@ agent_created: true
 - 用户转发单条链接/想法，想随手入库。
 
 ## 交付物结构（一个「实例」目录）
+App 模板是 **Vite 工程**（React 19 + Tailwind CSS 4 + Motion 13 + vite-plugin-pwa），源码在仓库 `app/`，构建产物落到实例根目录：
 ```
 <实例>/
-  index.html            单页应用（hash 路由，脚本按顺序加载，file:// 可直接打开）
-  assets/
-    app.css             设计令牌与组件样式（杂志编辑风，亮/暗双主题）
-    data.js             读取 window.SUPERMARK_DATA，建索引与格式化
-    store.js            用户标注持久化（localStorage 为主，IndexedDB 可用时升级并迁移）
-    filter.js           筛选状态与过滤/排序
-    charts.js           手写 SVG 图表（柱状 / 环形 / 热力矩阵 / 水平条）
-    views.js            流、主题、洞察、详情四个视图的渲染
-    app.js              路由、事件委托、入场编排、主题切换
+  index.html            Vite 构建产物（hash 路由 SPA；需 http 部署，file:// 不再支持）
+  assets/               构建出的 js/css（带内容指纹）
+  icons/                PWA 图标（模板 public/icons 原样拷出）
+  manifest.webmanifest  PWA 清单（vite-plugin-pwa 生成）
+  sw.js + workbox-*.js  Service Worker（壳预缓存 + 数据 SWR）
   data/
     raw.json            事实层：解析后的原始条目（只增不改）
     transcripts.json    事实层扩展：音频转写稿（按 id，逐条落盘）
@@ -203,15 +200,26 @@ agent_created: true
 
 因此：数据以 `window.SUPERMARK_DATA = {...}` 的 `.js` 形式注入（规避 `file://` 下 fetch 的 CORS 限制），用户标注走 localStorage（file:// 亦可用），IndexedDB 可用时自动升级并迁移。未来若数据量过万或需要复杂查询，再在 Worker 内挂 `sqlite-wasm` 的 `opfs-sahpool`，SQL 层无需重设计。
 
-## PWA 支持（http 部署生效，file:// 不受影响）
-模板已按 `iskill-pwa-guideline` 补齐 PWA 五项中的四项（门禁未做，无需求）：
+## App 技术栈 v2（React + Tailwind + Vite + Motion + PWA）
+2026-09 起 app 模板从 vanilla JS 升级为 Vite 工程（vanilla 版保留在 tag `v1.0.0-vanilla`）：
 
-- **app/manifest.json**：standalone / zh-CN / 朱砂主题色；`start_url` 与 `scope` 用相对根，任意子路径可部署。
-- **app/assets/icons/**：`icon.svg` 朱砂印源图 + `generate-icons.mjs` 程序化生成 PNG（192 / 512 / maskable-512 / apple-touch-icon-180）。图形主体占 62.5%，天然满足 maskable 80% 安全区。resvg 用 managed node workspace 的绝对路径导入（ESM 不认 NODE_PATH）。
-- **app/sw.js**：应用壳预缓存（install 时 addAll）；`data/marks.js` 等内容走 stale-while-revalidate（离线可读、后台拉新）；**`data/build-info.json` 不拦截**（SWR 会「先旧后新」，版本指纹必须永远新鲜）。
-- **app/assets/pwa.js**：SW 注册带协议守卫（`/^https?:$/`，file:// 静默跳过，双击可用性不变）；启动时 `fetch('data/build-info.json', {cache:'no-store'})` 与 localStorage 记住的 builtAt 比对，变化则亮**可关闭的底部轻提示**，点「刷新」走三步法（清全部 Cache Storage → 注销 SW → reload）——`updateSW(true)` 类做法不清运行时缓存，marks.js 旧数据会残留。
+- **栈**：React 19.3 / Tailwind CSS 4.3（`@tailwindcss/vite`，主题变量在 `src/index.css` 的 `@theme`，`[data-theme=dark]` 覆盖同名变量）/ Motion 13（`motion/react` 入场错峰与 Toast 动效）/ Vite 8.3 / vite-plugin-pwa 1.3。
+- **源码**：仓库 `app/`（`src/lib/` 数据·存储·筛选·PWA，`src/components/` 视图组件，图表仍为手写 SVG 零依赖）。数据契约不变：`window.SUPERMARK_DATA`（`data/marks.js` 以普通 `<script>` 注入，不参与打包指纹）。
+- **重建实例**：
+  ```
+  cd <实例>/app && npm install
+  DATA_ROOT=<实例根> OUT_DIR=<实例根> npx vite build
+  ```
+  产物直接落实例根（`emptyOutDir: false`，不碰 data/、media/）。dev 模式（`npm run dev`）由内置中间件把 `<DATA_ROOT>/data`、`/media` 映射到 dev server。
+- **注意**：ES module 在 `file://` 下被 CORS 拦，**v2 起 `file://` 双击打开不再支持**，一律走 http 预览/托管。
 
-**给实例补 PWA 的步骤**：把模板 `app/` 全量同步进实例（copyFileSync 可能被文件策略拦，用 read+write）→ 重跑 `build <dir>` 产出 `build-info.json` → http 预览验证 `sw.js`/`manifest.json` 均 200。iOS 安装 = Safari 分享菜单「添加到主屏幕」（无 beforeinstallprompt，靠 apple-touch-icon + apple-meta 出图标）。
+## PWA 支持（vite-plugin-pwa，http 部署生效）
+- **manifest.webmanifest**：vite.config 内联配置（standalone / zh-CN / 朱砂主题色，相对根 `start_url`/`scope`）。
+- **app/public/icons/**：`icon.svg` 朱砂印源图 + `generate-icons.mjs` 程序化生成 PNG（192 / 512 / maskable-512 / apple-touch-icon-180）。图形主体占 62.5%，天然满足 maskable 80% 安全区。
+- **SW（generateSW）**：应用壳预缓存（html/js/css/图标，globIgnores 排除 data/media）；`data/marks.js` 走 StaleWhileRevalidate（离线可读、后台拉新）；音频走 CacheFirst（带 rangeRequests）；**`data/build-info.json` 走 NetworkFirst**（版本指纹必须永远新鲜，避免「先旧后新」）。
+- **更新感知（src/lib/pwa.jsx）**：SW 注册带协议守卫（`/^https?:$/`，非 http 静默跳过）；SW 新版本 `onNeedRefresh`；启动时 `fetch('data/build-info.json', {cache:'no-store'})` 与 localStorage 记住的 builtAt 比对，变化则亮**可关闭的底部轻提示**（Motion 进出场），点「刷新」走三步法（清全部 Cache Storage → 注销 SW → reload）——不清运行时缓存的话 marks.js 旧数据会残留。
+
+**给实例补 PWA 的步骤**：实例 `app/` 里 `npm install` + `DATA_ROOT/OUT_DIR` 双环境变量 build → http 预览验证 `sw.js`/`manifest.webmanifest` 均 200。iOS 安装 = Safari 分享菜单「添加到主屏幕」（无 beforeinstallprompt，靠 apple-touch-icon + apple-meta 出图标）。
 
 ## 隐私
 全部数据留在本地：实例目录 + 浏览器本地存储，无后端、无埋点、无外链请求（除用户主动点「打开原内容」跳转微信）。不上传任何内容到第三方；若将来接 ima 同步，凭证放 `~/.workbuddy/iskill-super-mark/config.json` 并加入 .gitignore，绝不进仓库。
