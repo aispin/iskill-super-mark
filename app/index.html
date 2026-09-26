@@ -13,6 +13,32 @@
 <meta name="apple-mobile-web-app-title" content="收藏册">
 <!-- 运行时数据（build 产物，不参与打包指纹）：file:// 下不存在，App 自动降级为空态 -->
 <script src="./data/marks.js"></script>
+<!-- 自诊断：模块脚本加载/执行失败时，把真实报错显示在页面上（黑屏排查用） -->
+<script>
+(function () {
+  function show(msg) {
+    try {
+      var d = document.createElement('div');
+      d.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:#7f1d1d;color:#fecaca;padding:10px 12px;border-radius:8px;font:12px/1.5 monospace;word-break:break-all;';
+      d.textContent = '加载出错：' + msg;
+      (document.body || document.documentElement).appendChild(d);
+      try { localStorage.setItem('sm.lastError', String(msg)); } catch (e) {}
+    } catch (e) { /* ignore */ }
+  }
+  window.addEventListener('error', function (e) {
+    if (e && e.message && !/Script error/i.test(e.message)) show(e.message + ' @ ' + (e.filename || '') + ':' + (e.lineno || ''));
+  }, true);
+  window.addEventListener('unhandledrejection', function (e) {
+    show('Promise: ' + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
+  });
+  setTimeout(function () {
+    var root = document.getElementById('root');
+    if (root && !root.firstChild && !document.querySelector('[data-booted]')) {
+      show('React 未挂载（root 为空）。若上方无具体报错，多为 iOS 版本过低或脚本被拦。');
+    }
+  }, 4000);
+})();
+</script>
 </head>
 <body>
 <div id="root"></div>

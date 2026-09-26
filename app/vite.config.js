@@ -99,6 +99,9 @@ export default defineConfig({
     // 现有静态服务无需改动。不清空目录，避免误删数据。
     outDir: OUT_DIR,
     emptyOutDir: false,
+    // 兼容更老的 iOS Safari（黑屏排查：默认 baseline 目标对老系统不够保守）
+    target: 'safari15',
+    cssTarget: 'safari15',
   },
   server: {
     port: 5188,
