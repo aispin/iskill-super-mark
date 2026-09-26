@@ -8,7 +8,14 @@
 <meta name="description" content="把微信里随手收藏的内容，变成一本可检索、可分类、有洞察的个人收藏册。">
 <!-- 朱砂印：内联 SVG favicon，零外部请求 -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2312100d'/%3E%3Crect x='6' y='6' width='20' height='20' fill='%23ff5a2b'/%3E%3Crect x='12' y='12' width='8' height='8' fill='%2312100d'/%3E%3C/svg%3E">
+<!-- PWA：manifest + 图标 + iOS 安装 meta（file:// 下浏览器自动忽略，不影响双击打开） -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="收藏册">
 <link rel="stylesheet" href="assets/app.css">
+<script src="assets/pwa.js" defer></script>
 </head>
 <body>
 

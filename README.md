@@ -79,6 +79,7 @@ node scripts/mark.mjs caps
 ## 技术选择
 
 - **零外部依赖**：无框架、无 CDN、无构建步骤；`file://` 双击 `index.html` 即可打开
+- **PWA（http 部署生效）**：manifest + 程序化生成的全套图标（192/512/maskable/apple-touch-icon）+ Service Worker（壳预缓存 + 数据 SWR）+ 版本更新感知（`build-info.json` 指纹比对 → 可关闭的底部轻提示 → 三步法强刷）。`file://` 下自动降级为纯静态打开，双击可用性不变。配方来自 [`iskill-pwa-guideline`](../iskill-pwa-guideline/)
 - **不用 wa-sqlite / OPFS**：静态托管设不了 COOP/COEP 头，`file://` 下 OPFS 不可用，而本场景写入极轻。数据以 `window.SUPERMARK_DATA` 注入，标注走 localStorage（IndexedDB 可用时自动升级）
 - **四层数据全部增量、只增不改**：`raw.json`（原文）→ `transcripts.json`（转写稿）→ `enrich.json`（分类打标）→ `deep.json`（深度解读）。重跑任何一层都不丢数据、不重跑已完成的条目
 - **音频不出机器**：转写默认走本地引擎（VoiceStudio / mlx-whisper）
@@ -96,7 +97,7 @@ scripts/lib/
   audio.mjs                     适配层：inbox 认领 / 按 id 命名 mp3（引擎在 iskill-media-transcribe）
   asr.mjs                       适配层：转发引擎转写（VoiceBox / whisper CLI）
   engine.mjs                    引擎加载器（MEDIA_TRANSCRIBE_HOME 或兄弟目录）
-app/                            Web App 模板（init 时拷进实例）
+app/                            Web App 模板（init 时拷进实例；含 manifest/sw.js/icons/pwa.js）
 docs/requirements.md            需求规格
 examples/wechat-sample.txt      真实样本（96 条）
 ```

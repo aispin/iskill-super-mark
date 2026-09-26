@@ -1,6 +1,6 @@
 ---
 name: iskill-super-mark
-description: 把微信（视频号/公众号）里随手转发收藏的内容，变成一本可检索、可分类、有洞察的个人「收藏册」网页应用。提供 init/ingest/add/analyze/build/report/preview/fetch/transcribe/deep/caps 十一个命令：初始化实例、批量导入聊天记录、单条追加、AI 分类打标、生成运行时数据、控制台摘要、本地预览、抓取视频音频（yt-dlp + 视频号插件，转 mp3）、本地语音转写（VoiceBox / whisper）、基于转写稿的深度解读、能力体检。交付物是零外部依赖的纯静态站点（版式照搬 Netflix Media Center：渐变 Hero + 精选海报行 + 4 列 2:3 竖版海报网格；手机优先、file:// 双击即开）。当用户说「整理我收藏的微信内容」「把转发的视频号做个知识库」「收藏册」「super mark」「分析我转发的链接」「把视频转成文字再分析」时使用。
+description: 把微信（视频号/公众号）里随手转发收藏的内容，变成一本可检索、可分类、有洞察的个人「收藏册」网页应用。提供 init/ingest/add/analyze/build/report/preview/fetch/transcribe/deep/caps 十一个命令：初始化实例、批量导入聊天记录、单条追加、AI 分类打标、生成运行时数据、控制台摘要、本地预览、抓取视频音频（yt-dlp + 视频号插件，转 mp3）、本地语音转写（VoiceBox / whisper）、基于转写稿的深度解读、能力体检。交付物是零外部依赖的纯静态站点（版式照搬 Netflix Media Center：渐变 Hero + 精选海报行 + 4 列 2:3 竖版海报网格；手机优先、file:// 双击即开；http 部署时支持 PWA 安装/离线/更新感知）。当用户说「整理我收藏的微信内容」「把转发的视频号做个知识库」「收藏册」「super mark」「分析我转发的链接」「把视频转成文字再分析」时使用。
 agent_created: true
 ---
 
@@ -40,6 +40,7 @@ agent_created: true
     marks.js            运行时数据 window.SUPERMARK_DATA（build 产物）
     marks.json          同上，交换/导出用
     stats.js            预聚合统计 window.SUPERMARK_STATS
+    build-info.json     版本指纹（build 产物，PWA 更新感知用）
   media/                抓到的音频（<id>.mp3），深度分析的事实来源
   inbox/                手工投放区：录屏/下载的 mp4 放这里，fetch 会自动认领
 ```
@@ -201,6 +202,16 @@ agent_created: true
 - 数据量按 100 条/月估算，一年约 1200 条、文本 < 2MB，前端内存过滤毫秒级。
 
 因此：数据以 `window.SUPERMARK_DATA = {...}` 的 `.js` 形式注入（规避 `file://` 下 fetch 的 CORS 限制），用户标注走 localStorage（file:// 亦可用），IndexedDB 可用时自动升级并迁移。未来若数据量过万或需要复杂查询，再在 Worker 内挂 `sqlite-wasm` 的 `opfs-sahpool`，SQL 层无需重设计。
+
+## PWA 支持（http 部署生效，file:// 不受影响）
+模板已按 `iskill-pwa-guideline` 补齐 PWA 五项中的四项（门禁未做，无需求）：
+
+- **app/manifest.json**：standalone / zh-CN / 朱砂主题色；`start_url` 与 `scope` 用相对根，任意子路径可部署。
+- **app/assets/icons/**：`icon.svg` 朱砂印源图 + `generate-icons.mjs` 程序化生成 PNG（192 / 512 / maskable-512 / apple-touch-icon-180）。图形主体占 62.5%，天然满足 maskable 80% 安全区。resvg 用 managed node workspace 的绝对路径导入（ESM 不认 NODE_PATH）。
+- **app/sw.js**：应用壳预缓存（install 时 addAll）；`data/marks.js` 等内容走 stale-while-revalidate（离线可读、后台拉新）；**`data/build-info.json` 不拦截**（SWR 会「先旧后新」，版本指纹必须永远新鲜）。
+- **app/assets/pwa.js**：SW 注册带协议守卫（`/^https?:$/`，file:// 静默跳过，双击可用性不变）；启动时 `fetch('data/build-info.json', {cache:'no-store'})` 与 localStorage 记住的 builtAt 比对，变化则亮**可关闭的底部轻提示**，点「刷新」走三步法（清全部 Cache Storage → 注销 SW → reload）——`updateSW(true)` 类做法不清运行时缓存，marks.js 旧数据会残留。
+
+**给实例补 PWA 的步骤**：把模板 `app/` 全量同步进实例（copyFileSync 可能被文件策略拦，用 read+write）→ 重跑 `build <dir>` 产出 `build-info.json` → http 预览验证 `sw.js`/`manifest.json` 均 200。iOS 安装 = Safari 分享菜单「添加到主屏幕」（无 beforeinstallprompt，靠 apple-touch-icon + apple-meta 出图标）。
 
 ## 隐私
 全部数据留在本地：实例目录 + 浏览器本地存储，无后端、无埋点、无外链请求（除用户主动点「打开原内容」跳转微信）。不上传任何内容到第三方；若将来接 ima 同步，凭证放 `~/.workbuddy/iskill-super-mark/config.json` 并加入 .gitignore，绝不进仓库。

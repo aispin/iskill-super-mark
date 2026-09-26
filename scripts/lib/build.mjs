@@ -141,5 +141,12 @@ export function writeOutputs(dir, { marks, tax }, stats) {
   write(path.join(dataDir, 'marks.js'), `window.SUPERMARK_DATA = ${JSON.stringify(payload)};\n`);
   write(path.join(dataDir, 'marks.json'), JSON.stringify(payload, null, 2));
   write(path.join(dataDir, 'stats.js'), `window.SUPERMARK_STATS = ${JSON.stringify(stats)};\n`);
+  /* 版本指纹：PWA 页面侧启动时 no-store 拉取比对（参考 iskill-pwa-guideline ④）。
+     marks.js 无 hash 文件名且走 SWR，数据-only 更新不触发 SW 事件，必须靠此文件感知 */
+  write(path.join(dataDir, 'build-info.json'), JSON.stringify({
+    builtAt: stats.builtAt,
+    marks: marks.length,
+    deepened: stats.deepened || 0,
+  }) + '\n');
   return payload;
 }

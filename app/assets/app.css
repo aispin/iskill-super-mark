@@ -534,3 +534,21 @@ body {
   .dnav { grid-template-columns: 1fr; }
   .dnav-a.right { text-align: left; }
 }
+
+/* PWA 版本更新轻提示（底部，不打断、可关闭） */
+#pwa-toast {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+  z-index: 99; display: flex; align-items: center; gap: 12px;
+  max-width: min(92vw, 460px); padding: 10px 14px;
+  background: #1c1915; color: var(--ink, #f4efe4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 13px; line-height: 1.4;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+#pwa-toast span { flex: 1; }
+#pwa-toast button {
+  appearance: none; border: 0; cursor: pointer; font: inherit;
+  padding: 5px 10px; flex: none;
+}
+#pwa-toast [data-act="refresh"] { background: var(--accent, #ff5a2b); color: #12100d; font-weight: 700; }
+#pwa-toast [data-act="close"] { background: none; color: inherit; opacity: 0.6; padding: 5px 6px; }
