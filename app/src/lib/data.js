@@ -50,7 +50,7 @@ const tintCache = new Map();
 
 /** 主题感知的分类主色（theme: 'dark' | 'light'） */
 export function catColor(id, theme = 'dark') {
-  const raw = (catMap.get(id) || {}).color || '#56534E';
+  const raw = (catMap.get(id) || {}).color || '#57534e';
   const key = (theme === 'light' ? 'l' : 'd') + raw;
   if (tintCache.has(key)) return tintCache.get(key);
   const { h, s, l } = hexToHsl(raw);
@@ -79,7 +79,7 @@ export const posterGlyph = (id) => hash32(id + '#poster') % 6;
 
 /** 海报配色：以分类色相为家族，按 id 抖动色相，保证同分类也不重样 */
 export function posterVars(id, catId, theme = 'dark') {
-  const raw = (catMap.get(catId) || {}).color || '#56534E';
+  const raw = (catMap.get(catId) || {}).color || '#57534e';
   const { h, s } = hexToHsl(raw);
   const dh = (hash32(id) % 29) - 14;
   const S = clamp(s * 0.8 + 24, 34, 64);

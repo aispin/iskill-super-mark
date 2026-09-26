@@ -87,7 +87,7 @@ function UpdateToast({ pwa }) {
       {pwa.show && (
         <motion.div
           id="pwa-toast" role="status"
-          className="fixed bottom-[18px] left-1/2 z-50 flex max-w-[min(92vw,460px)] -translate-x-1/2 items-center gap-3 rounded-lg border border-white/10 bg-[#1c1915] px-3.5 py-2.5 text-[13px] text-[#f4efe4] shadow-2xl"
+          className="fixed bottom-[18px] left-1/2 z-50 flex max-w-[min(92vw,460px)] -translate-x-1/2 items-center gap-3 rounded-lg border border-white/10 bg-stone-900 px-3.5 py-2.5 text-[13px] text-stone-50 shadow-2xl"
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24 }}
         >
           <span className="flex-1">{pwa.text}</span>
@@ -121,12 +121,12 @@ export default function App() {
     localStorage.setItem('supermark.theme', t);
     document.documentElement.dataset.theme = t;
     const m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.content = t === 'dark' ? '#0b0a08' : '#ffffff';
+    if (m) m.content = t === 'dark' ? '#0c0a09' : '#ffffff';
   };
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     const m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.content = theme === 'dark' ? '#0b0a08' : '#ffffff';
+    if (m) m.content = theme === 'dark' ? '#0c0a09' : '#ffffff';
   }, [theme]);
 
   const counts = useMemo(() => {

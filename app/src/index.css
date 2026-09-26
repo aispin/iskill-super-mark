@@ -6,26 +6,27 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
-  --color-bg: #f6f3ec;
-  --color-panel: #ffffff;
-  --color-ink: #1d1a15;
-  --color-muted: #75705f;
-  --color-rule: #e4dfd2;
-  --color-accent: #e8431a;
-  --color-accent-ink: #fff6ee;
+  /* 颜色体系：全部取自 Tailwind 内置调色板（stone 中性色 + orange 强调色） */
+  --color-bg: #f5f5f4;         /* stone-100 */
+  --color-panel: #ffffff;      /* white */
+  --color-ink: #1c1917;        /* stone-900 */
+  --color-muted: #78716c;      /* stone-500 */
+  --color-rule: #e7e5e4;       /* stone-200 */
+  --color-accent: #ea580c;     /* orange-600 */
+  --color-accent-ink: #fff7ed; /* orange-50 */
 
   --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
   --font-sans: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
 }
 
 [data-theme="dark"] {
-  --color-bg: #0b0a08;
-  --color-panel: #14120e;
-  --color-ink: #f4efe4;
-  --color-muted: #8d8778;
-  --color-rule: #26231d;
-  --color-accent: #ff5a2b;
-  --color-accent-ink: #12100d;
+  --color-bg: #0c0a09;         /* stone-950 */
+  --color-panel: #1c1917;      /* stone-900 */
+  --color-ink: #fafaf9;        /* stone-50 */
+  --color-muted: #a8a29e;      /* stone-400 */
+  --color-rule: #292524;       /* stone-800 */
+  --color-accent: #f97316;     /* orange-500 */
+  --color-accent-ink: #1c1917; /* stone-900 */
 }
 
 html { background: var(--color-bg); color-scheme: light; }
