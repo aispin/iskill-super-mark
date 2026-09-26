@@ -1,39 +1,62 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="light">
+<html lang="zh-CN" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>收藏册 · super-mark</title>
-<meta name="theme-color" content="#f4f1e9">
+<meta name="theme-color" content="#0b0a08">
 <meta name="description" content="把微信里随手收藏的内容，变成一本可检索、可分类、有洞察的个人收藏册。">
+<!-- 朱砂印：内联 SVG favicon，零外部请求 -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2312100d'/%3E%3Crect x='6' y='6' width='20' height='20' fill='%23ff5a2b'/%3E%3Crect x='12' y='12' width='8' height='8' fill='%2312100d'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/app.css">
 </head>
 <body>
 
-<header class="masthead">
-  <div class="masthead-top">
-    <div class="brand">
-      <h1>收藏册</h1>
-      <span class="en">super&nbsp;mark</span>
-    </div>
-    <div class="masthead-meta">
-      <span id="meta"></span>
-      <button class="iconbtn" id="theme" title="切换明暗" aria-label="切换明暗">☾</button>
-    </div>
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="logo" href="#/flow">
+      <span class="mark" aria-hidden="true"></span>
+      <b>收藏册</b>
+      <i>super mark</i>
+    </a>
+    <nav class="topnav">
+      <a href="#/flow">时间流</a>
+      <a href="#/topic">主题</a>
+      <a href="#/insight">洞察</a>
+    </nav>
+    <button class="cta" id="cta" title="只看还能做的事">▶ 可做 <b id="ctaN">0</b></button>
+    <button class="iconbtn" id="theme" title="切换明暗" aria-label="切换明暗">☀</button>
   </div>
-  <nav class="nav">
-    <a href="#/flow">时间流</a>
-    <a href="#/topic">主题</a>
-    <a href="#/insight">洞察</a>
-    <span class="spacer"></span>
-    <span id="count" style="font-family:var(--font-mono);font-size:var(--t-xs);color:var(--muted);font-variant-numeric:tabular-nums"></span>
-  </nav>
 </header>
 
-<main class="wrap">
-  <div class="toolbar" id="toolbar"></div>
+<section class="hero" id="hero">
+  <div class="hero-in">
+    <h1>把随手收藏的内容<br>变成一本可检索、可回看的收藏册</h1>
+    <p class="hero-sub" id="heroSub"></p>
+    <div class="hero-search">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <input id="q" type="search" autocomplete="off" placeholder="搜标题、摘要、要点、原文…" aria-label="搜索收藏内容">
+    </div>
+    <div class="featured" id="featured"></div>
+  </div>
+</section>
+
+<main class="page">
+  <div class="sec-head"><h2 id="secTitle"></h2><span class="spacer"></span><span class="grp-n" id="secCount"></span></div>
+  <div class="pills" id="pills"></div>
+  <div class="pills filters2" id="pills2"></div>
   <div id="view"><div class="loading">正在翻阅收藏册…</div></div>
 </main>
+
+<footer class="foot">
+  <span>SUPER MARK</span>
+  <span id="footMeta"></span>
+  <span class="spacer"></span>
+  <span>本地优先 · 数据不出机器</span>
+</footer>
 
 <script src="data/marks.js"></script>
 <script src="assets/data.js"></script>
