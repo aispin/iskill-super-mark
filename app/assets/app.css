@@ -479,3 +479,58 @@ body {
   .stats { grid-template-columns: repeat(2, 1fr); }
   .detail h1 { font-size: 23px; }
 }
+
+/* ============================================================
+   v2 增补：深读徽章 / 编辑精选 / 相关收藏 / 上下条导航 / 深读工程
+   ============================================================ */
+
+/* 海报上的「深读」徽章：与「可做」并列，描边款区分层级 */
+.poster-badge.deep {
+  background: transparent;
+  color: var(--accent-2);
+  box-shadow: inset 0 0 0 1px var(--accent-dim);
+}
+
+/* 详情页：上一条 / 下一条 */
+.dnav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+  border-top: 1px solid var(--rule);
+  margin-top: var(--s-4);
+  padding-top: var(--s-3);
+}
+.dnav-a {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-decoration: none;
+  color: var(--ink-2);
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  transition: border-color 0.15s, color 0.15s;
+}
+.dnav-a:hover { border-color: var(--accent-dim); color: var(--ink); }
+.dnav-a span { font-family: var(--font-mono); font-size: var(--t-2xs); letter-spacing: 0.14em; color: var(--accent); }
+.dnav-a b { font-weight: 600; font-size: 13px; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dnav-a.right { text-align: right; }
+
+/* 相关收藏：紧凑 4 列小海报 */
+.grid.rel { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.grid.rel .poster { padding: 8px 9px 10px; }
+.grid.rel .poster-title { font-size: calc(var(--tf, 21px) * 0.62); }
+.grid.rel .poster-no { display: none; }
+.grid.rel .card-cap { font-size: 10px; }
+
+/* 洞察页：深读工程面板 */
+.stats.mini { grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px; }
+.stats.mini .v { font-size: 26px; }
+.stats.mini .k { font-size: var(--t-xs); }
+.pipe-note { margin: 0; color: var(--muted); font-size: var(--t-xs); line-height: 1.6; }
+
+@media (max-width: 640px) {
+  .grid.rel { grid-template-columns: repeat(2, 1fr); }
+  .stats.mini { grid-template-columns: repeat(2, 1fr); }
+  .dnav { grid-template-columns: 1fr; }
+  .dnav-a.right { text-align: left; }
+}

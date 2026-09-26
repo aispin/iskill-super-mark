@@ -31,6 +31,7 @@ window.SM = window.SM || {};
           <span class="pt-l">
             <span class="poster-plat">${esc(SM.platLabel(m.sourcePlatform))}</span>
             ${m.actionable ? '<span class="poster-badge">可做</span>' : ''}
+            ${m.deep ? '<span class="poster-badge deep">深读</span>' : ''}
           </span>
           <span class="poster-no">${no(m)}</span>
         </span>
@@ -164,6 +165,19 @@ window.SM = window.SM || {};
 
     const todo = SM.marks.filter((m) => m.actionable && SM.store.get(m.id).readStatus !== 'done').slice(0, 8);
 
+    // 深读工程：转写 → 深读 AI 管线的进度面板
+    const trd = SM.marks.filter((m) => m.transcript);
+    const deepd = SM.marks.filter((m) => m.deep);
+    const trChars = trd.reduce((a, m) => a + [...String((m.transcript || {}).text || '')].length, 0);
+    const pipeHTML = `
+      <div class="stats mini">
+        <div class="stat"><div class="v">${trd.length}</div><div class="k">已转写</div></div>
+        <div class="stat"><div class="v">${deepd.length}</div><div class="k">已深读</div></div>
+        <div class="stat"><div class="v">${trChars >= 10000 ? (trChars / 10000).toFixed(1) + ' 万' : trChars}</div><div class="k">转写字数</div></div>
+        <div class="stat"><div class="v">${Math.round((deepd.length / Math.max(1, trd.length)) * 100)}%</div><div class="k">深读覆盖</div></div>
+      </div>
+      <p class="pipe-note">音频本地转写 → 逐条结构化深读（论点/步骤/事实/结论），数据不出机器。</p>`;
+
     return `<div class="stats">
         <div class="stat"><div class="v">${s.total}</div><div class="k">条收藏</div></div>
         <div class="stat"><div class="v">${s.spanDays}</div><div class="k">天跨度</div></div>
@@ -172,6 +186,10 @@ window.SM = window.SM || {};
         <div class="stat"><div class="v">${(s.byPlatform || []).length}</div><div class="k">个来源</div></div>
       </div>
       <div class="panels">
+        <section class="panel">
+          <div class="grp-head"><h3>深读工程</h3><span class="grp-n">听一遍 → 读一遍的 AI 管线</span></div>
+          ${pipeHTML}
+        </section>
         <section class="panel">
           <div class="grp-head"><h3>收藏节奏</h3><span class="grp-n">${SM.fmtDate(s.firstAt)} — ${SM.fmtDate(s.lastAt)}</span></div>
           ${SM.charts.bars(s.byMonth || [], { h: 190, label: '按月收藏量' })}
@@ -200,6 +218,32 @@ window.SM = window.SM || {};
   }
 
   /* ---------- 详情 ---------- */
+
+  /** 按时间倒序的全量序列（上一条/下一条导航用） */
+  function timeOrdered() {
+    return [...SM.marks].sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt)));
+  }
+
+  /** 相关收藏：同分类打底，标签重叠加分，取 4 条真实卡片 */
+  function relatedHTML(m) {
+    const tags = new Set(m.tags || []);
+    const rel = SM.marks
+      .filter((x) => x.id !== m.id)
+      .map((x) => {
+        let score = 0;
+        if (x.category === m.category) score += 2;
+        if (m.subCategory && x.subCategory === m.subCategory) score += 1;
+        for (const t of x.tags || []) if (tags.has(t)) score += 1;
+        return { x, score };
+      })
+      .filter((r) => r.score > 0)
+      .sort((a, b) => b.score - a.score || String(b.x.sentAt).localeCompare(String(a.x.sentAt)))
+      .slice(0, 4);
+    if (!rel.length) return '';
+    return `<section class="sec"><div class="grp-head"><h4>相关收藏</h4><span class="grp-n">同主题 · 按标签重叠度推荐</span></div>
+      <div class="grid rel">${rel.map((r) => posterHTML(r.x)).join('')}</div></section>`;
+  }
+
   function detail(m) {
     const u = SM.store.get(m.id);
     const points = (m.keyPoints || []).length
@@ -227,6 +271,16 @@ window.SM = window.SM || {};
           <div class="raw">${esc(tr.text || '')}</div></details>
       </section>` : '';
 
+    // 上一条（较新）/ 下一条（较旧）：按时间流顺序，支持键盘 ← →
+    const ordered = timeOrdered();
+    const idx = ordered.findIndex((x) => x.id === m.id);
+    const prev = idx > 0 ? ordered[idx - 1] : null;
+    const next = idx >= 0 && idx < ordered.length - 1 ? ordered[idx + 1] : null;
+    const navHTML = (prev || next) ? `<nav class="dnav">
+        ${prev ? `<a href="#/item/${encodeURIComponent(prev.id)}" class="dnav-a"><span>← 较新</span><b>${esc(prev.title)}</b></a>` : '<span></span>'}
+        ${next ? `<a href="#/item/${encodeURIComponent(next.id)}" class="dnav-a right"><span>较旧 →</span><b>${esc(next.title)}</b></a>` : '<span></span>'}
+      </nav>` : '';
+
     return `<article class="detail" style="${V(m.category)}">
       <a class="back" href="#/flow">← 返回收藏册</a>
       <div class="dhead">
@@ -248,6 +302,7 @@ window.SM = window.SM || {};
       ${deepHTML}
       ${m.rawText ? `<section class="sec"><div class="grp-head"><h4>转发原文</h4></div><div class="raw">${esc(m.rawText)}</div></section>` : ''}
       ${trHTML}
+      ${relatedHTML(m)}
       ${tags.length ? `<div class="row-tags" style="margin:var(--s-4) 0">${tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
       <div class="actions">
         ${m.url ? `<a class="cta" href="${esc(m.url)}" target="_blank" rel="noopener">打开原内容 ↗</a>` : ''}
@@ -256,6 +311,7 @@ window.SM = window.SM || {};
         <span class="lbl">评分</span>${stars}
         <textarea class="note" placeholder="写下你的想法、决定、或者这条为什么值得留着…">${esc(u.note || '')}</textarea>
       </div>
+      ${navHTML}
     </article>`;
   }
 

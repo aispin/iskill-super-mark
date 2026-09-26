@@ -32,7 +32,12 @@
   function renderFeatured() {
     const box = $('#featured');
     const show = route.name === 'flow' && !SM.filter.activeCount();
-    box.innerHTML = show ? SM.views.featuredHTML(sortByTime(SM.marks).slice(0, 4)) : '';
+    if (!show) { box.innerHTML = ''; return; }
+    // 编辑精选：已深读 / 星标 / 高评分优先，而非简单最新 4 条（避免和网格开头重复）
+    const byTime = sortByTime(SM.marks);
+    const picks = byTime.filter((m) => m.deep || SM.store.get(m.id).starred || (SM.store.get(m.id).rating || 0) >= 4);
+    const list = (picks.length >= 4 ? picks : byTime).slice(0, 4);
+    box.innerHTML = SM.views.featuredHTML(list);
   }
 
   /* ---------- 筛选胶囊 ---------- */
@@ -202,6 +207,19 @@
     });
 
     window.addEventListener('hashchange', () => render(true));
+
+    // 详情页键盘导航：← 较新 / → 较旧（输入框聚焦时忽略）
+    document.addEventListener('keydown', (e) => {
+      if (route.name !== 'item' || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      const ordered = [...SM.marks].sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt)));
+      const i = ordered.findIndex((x) => x.id === route.id);
+      if (i < 0) return;
+      const target = e.key === 'ArrowLeft' ? ordered[i - 1] : ordered[i + 1];
+      if (target) location.hash = `#/item/${encodeURIComponent(target.id)}`;
+    });
+
     render(true);
   }
 
