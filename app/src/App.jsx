@@ -100,7 +100,7 @@ function UpdateToast({ pwa }) {
       {pwa.show && (
         <motion.div
           id="pwa-toast" role="status"
-          className="fixed bottom-[18px] left-1/2 z-50 flex max-w-[min(92vw,460px)] -translate-x-1/2 items-center gap-3 rounded-lg border border-white/10 bg-stone-900 px-3.5 py-2.5 text-[13px] text-stone-50 shadow-2xl"
+          className="fixed bottom-[calc(18px+env(safe-area-inset-bottom))] left-1/2 z-50 flex max-w-[min(92vw,460px)] -translate-x-1/2 items-center gap-3 rounded-lg border border-white/10 bg-stone-900 px-3.5 py-2.5 text-[13px] text-stone-50 shadow-2xl"
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24 }}
         >
           <span className="flex-1">{t(pwa.textKey)}</span>
@@ -212,8 +212,8 @@ export default function App() {
 
   return (
     <>
-      {/* 顶栏 */}
-      <header className="sticky top-0 z-40 border-b border-[var(--color-rule)] bg-[var(--color-bg)]/90 backdrop-blur">
+      {/* 顶栏（standalone 模式下顶部让出刘海/状态栏安全区） */}
+      <header className="sticky top-0 z-40 border-b border-[var(--color-rule)] bg-[var(--color-bg)]/90 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3 md:px-6">
           <a className="flex items-baseline gap-2" href="#/flow">
             <span className="h-3.5 w-3.5 rounded-[3px] bg-[var(--color-accent)]" aria-hidden="true" />
@@ -299,7 +299,7 @@ export default function App() {
           : null)}
       </main>
 
-      <footer className="border-t border-[var(--color-rule)]">
+      <footer className="border-t border-[var(--color-rule)] pb-[env(safe-area-inset-bottom)]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-6 font-mono text-xs text-[var(--color-muted)] md:px-6">
           <span className="tracking-widest">SUPER MARK</span>
           <span>{t('footer_stats', { total: stats.total, days: stats.spanDays })}</span>
