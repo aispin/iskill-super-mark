@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { marks, tax, stats, catColor } from '@/lib/data';
 import { makeFilterState, applyFilter, activeFilterCount, featuredPicks } from '@/lib/filter';
-import { storeInit, storeGet, useUserVersion } from '@/lib/useUser';
+import { storeInit, storeGet, useUserVersion } from '@/lib/store';
 import { usePwa } from '@/lib/pwa.jsx';
 import { PosterCard, PosterGrid, ListView, EmptyState } from '@/components/Poster.jsx';
 import { TopicView } from '@/components/TopicView.jsx';

@@ -1,7 +1,7 @@
 /* 海报卡：2:3 竖版，分类色渐变 + 几何母题 + 标题排版（没有图，就把排版当图） */
 import { motion } from 'motion/react';
 import { posterVars, posterGlyph, titleSize, platLabel, fmtShort, no, catColor } from '@/lib/data';
-import { storeGet } from '@/lib/useUser';
+import { storeGet, useUserVersion } from '@/lib/store';
 
 export function PosterCard({ m, theme, index = 0, animate = true }) {
   useUserVersion(); // 星标徽章随标注刷新

@@ -1,6 +1,6 @@
 /* 洞察视图：统计、深读工程面板、图表阵列、待办 */
 import { marks as allMarks, stats as s, tax, catColor, fmtDate, platLabel } from '@/lib/data';
-import { storeGet } from '@/lib/useUser';
+import { storeGet } from '@/lib/store';
 import { PosterGrid } from '@/components/Poster.jsx';
 import { Bars, Donut, Heat, HBars } from '@/components/Charts.jsx';
 

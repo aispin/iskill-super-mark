@@ -1,5 +1,7 @@
 /* 用户标注持久化：localStorage 为主（file:// 亦可用），IndexedDB 可用时自动升级并迁移
    移植自 vanilla 版 store.js，外加一个极简订阅以便 React 重渲染 */
+import { useSyncExternalStore } from 'react';
+
 const LS_KEY = 'supermark.user.v1';
 const DB_NAME = 'supermark';
 const STORE = 'marks';
@@ -74,3 +76,13 @@ export function storeSet(id, patch) {
 }
 export const storeBackend = () => backend;
 export function subscribeUser(fn) { listeners.add(fn); return () => listeners.delete(fn); }
+
+/* 订阅用户标注变化的 React hook（原在 useUser.js，Rolldown 对该中间层导出
+   resolve 异常导致线上 Safari ReferenceError，故并入 store.js 一并导出） */
+let version = 0;
+function bumpVersion() { version++; }
+listeners.add(bumpVersion);
+
+export function useUserVersion() {
+  return useSyncExternalStore(subscribeUser, () => version);
+}

@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { byId, catVars, catColor, fmtDate, fmtTime, platLabel, valName, audName, no, marks as allMarks } from '@/lib/data';
-import { storeGet, storeSet, useUserVersion } from '@/lib/useUser';
+import { storeGet, storeSet, useUserVersion } from '@/lib/store';
 import { timeOrdered, relatedMarks } from '@/lib/filter';
 import { PosterCard } from '@/components/Poster.jsx';
 
