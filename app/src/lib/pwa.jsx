@@ -27,11 +27,23 @@ export function usePwa() {
   useEffect(() => {
     if (!isHttp()) return undefined;
 
+    let onVisible;
     if ('serviceWorker' in navigator) {
       registerSW({
         immediate: true,
         onNeedRefresh: () => setUpdateReady(true),
+        // 更新检查绕过 HTTP 缓存：托管方未下发 Cache-Control 时，浏览器会启发式缓存
+        // sw.js（最长 24h），导致发布新版后「过一段时间才检测到」且时间不固定
+        registrationOptions: { updateViaCache: 'none' },
       });
+      // 从后台切回前台时主动查一次更新（覆盖 App 长驻不重开的场景）
+      onVisible = () => {
+        if (document.visibilityState !== 'visible') return;
+        navigator.serviceWorker.getRegistration()
+          .then((r) => r && r.update().catch(() => {}))
+          .catch(() => {});
+      };
+      document.addEventListener('visibilitychange', onVisible);
     }
 
     if (typeof fetch === 'function') {
@@ -47,7 +59,7 @@ export function usePwa() {
         .catch(() => {});
     }
 
-    return undefined;
+    return () => { if (onVisible) document.removeEventListener('visibilitychange', onVisible); };
   }, []);
 
   return {

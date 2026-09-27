@@ -100,12 +100,14 @@ function UpdateToast({ pwa }) {
       {pwa.show && (
         <motion.div
           id="pwa-toast" role="status"
-          className="fixed bottom-[calc(18px+env(safe-area-inset-bottom))] left-1/2 z-50 flex max-w-[min(92vw,460px)] -translate-x-1/2 items-center gap-3 rounded-lg border border-white/10 bg-stone-900 px-3.5 py-2.5 text-[13px] text-stone-50 shadow-2xl"
+          className="fixed bottom-[calc(18px+env(safe-area-inset-bottom))] left-1/2 z-50 flex w-[min(92vw,460px)] -translate-x-1/2 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 rounded-lg border border-white/10 bg-stone-900 px-3.5 py-2.5 text-[13px] text-stone-50 shadow-2xl max-[400px]:flex-col max-[400px]:items-stretch"
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24 }}
         >
-          <span className="flex-1">{t(pwa.textKey)}</span>
-          <button onClick={pwa.onRefresh} className="rounded bg-[var(--color-accent)] px-2.5 py-1 font-bold text-[var(--color-accent-ink)]">{t('btn_refresh')}</button>
-          <button onClick={pwa.onDismiss} aria-label="✕" className="px-1 opacity-60 hover:opacity-100">✕</button>
+          <span className="min-w-0 flex-1 leading-snug">{t(pwa.textKey)}</span>
+          <span className="flex shrink-0 items-center gap-1">
+            <button onClick={pwa.onRefresh} className="whitespace-nowrap rounded bg-[var(--color-accent)] px-2.5 py-1 font-bold text-[var(--color-accent-ink)]">{t('btn_refresh')}</button>
+            <button onClick={pwa.onDismiss} aria-label="✕" className="px-1 opacity-60 hover:opacity-100">✕</button>
+          </span>
         </motion.div>
       )}
     </AnimatePresence>
