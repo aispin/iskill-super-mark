@@ -52,7 +52,7 @@ export function usePwa() {
 
   return {
     show: updateReady || dataChanged,
-    text: updateReady ? '应用有新版本，刷新后生效' : '收藏数据已更新，刷新查看新内容',
+    textKey: updateReady ? 'app_updated' : 'data_updated',
     onRefresh: hardReload,
     onDismiss: () => { setUpdateReady(false); setDataChanged(false); },
   };

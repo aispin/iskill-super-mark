@@ -1,8 +1,10 @@
 /* 主题视图：标签云 + 按分类分组的收藏 */
 import { marks as allMarks, tax, catColor, catName } from '@/lib/data';
+import { useT } from '@/lib/i18n';
 import { PosterGrid, ListView, EmptyState } from '@/components/Poster.jsx';
 
 export function TopicView({ list, theme, viewMode, onPickTag }) {
+  const t = useT();
   if (!list.length) return <EmptyState />;
   const groups = new Map();
   list.forEach((m) => {
@@ -17,7 +19,7 @@ export function TopicView({ list, theme, viewMode, onPickTag }) {
 
   const tagCount = {};
   allMarks.forEach((m) => {
-    for (const t of [...(m.tags || []), ...(m.rawTags || [])]) tagCount[t] = (tagCount[t] || 0) + 1;
+    for (const tg of [...(m.tags || []), ...(m.rawTags || [])]) tagCount[tg] = (tagCount[tg] || 0) + 1;
   });
   const top = Object.entries(tagCount).sort((a, b) => b[1] - a[1]).slice(0, 28);
 
@@ -25,14 +27,14 @@ export function TopicView({ list, theme, viewMode, onPickTag }) {
     <>
       <section className="mb-10">
         <div className="mb-3 flex items-baseline justify-between">
-          <h3 className="text-base font-bold">标签云</h3>
-          <span className="text-xs text-[var(--color-muted)]">{Object.keys(tagCount).length} 个标签 · 点选筛选</span>
+          <h3 className="text-base font-bold">{t('tag_cloud')}</h3>
+          <span className="text-xs text-[var(--color-muted)]">{t('tag_meta', { n: Object.keys(tagCount).length })}</span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {top.map(([t, n]) => (
-            <button key={t} onClick={() => onPickTag(t)}
+          {top.map(([tg, n]) => (
+            <button key={tg} onClick={() => onPickTag(tg)}
               className="rounded-full border border-[var(--color-rule)] px-3 py-1 text-sm transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]">
-              {t}<span className="ml-1 font-mono text-xs text-[var(--color-muted)]">{n}</span>
+              {tg}<span className="ml-1 font-mono text-xs text-[var(--color-muted)]">{n}</span>
             </button>
           ))}
         </div>
@@ -42,12 +44,12 @@ export function TopicView({ list, theme, viewMode, onPickTag }) {
         const subs = {};
         items.forEach((m) => { if (m.subCategory) subs[m.subCategory] = (subs[m.subCategory] || 0) + 1; });
         const subLine = Object.entries(subs).sort((a, b) => b[1] - a[1]).slice(0, 4)
-          .map(([s, n]) => `${s} ${n}`).join(' / ');
+          .map(([s2, n]) => `${s2} ${n}`).join(' / ');
         return (
           <section key={cid} className="mb-10">
             <div className="mb-3 flex items-baseline justify-between">
               <h3 className="text-base font-bold" style={{ color: catColor(cid, theme) }}>{catName(cid)}</h3>
-              <span className="text-xs text-[var(--color-muted)]">{items.length} 条{subLine ? ` · ${subLine}` : ''}</span>
+              <span className="text-xs text-[var(--color-muted)]">{items.length} {t('unit_items')}{subLine ? ` · ${subLine}` : ''}</span>
             </div>
             {viewMode === 'list'
               ? <ListView list={items} theme={theme} />

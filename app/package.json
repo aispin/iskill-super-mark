@@ -1,7 +1,7 @@
 {
   "name": "supermark-app",
   "private": true,
-  "version": "2.0.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "收藏册 Web App：React + Tailwind CSS 4 + Vite 8 + Motion + PWA",
   "scripts": {

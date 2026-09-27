@@ -49,6 +49,7 @@ body {
   flex-direction: column;
   justify-content: flex-end;
   padding: 12px;
+  color: #fafaf9; /* 暗色海报文字 */
   background:
     radial-gradient(120% 90% at 85% 0%, var(--p2) 0%, transparent 55%),
     linear-gradient(160deg, var(--p1) 0%, color-mix(in oklab, var(--p1) 60%, black) 100%);
@@ -56,6 +57,24 @@ body {
   transition: transform .25s ease, box-shadow .25s ease;
 }
 .poster-card:hover .poster-face { transform: translateY(-4px) scale(1.015); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14), 0 18px 40px rgb(0 0 0 / 0.45); }
+
+/* 亮色模式：淡雅低保和粉彩底 + 深墨文字 + 轻几何纹理（--p1/--p2/--pm 由 posterVars 按主题输出） */
+.poster-card[data-th="light"] .poster-face {
+  color: #44403c; /* stone-700 */
+  background:
+    radial-gradient(120% 90% at 85% 0%, var(--p2) 0%, transparent 60%),
+    linear-gradient(160deg, var(--p1) 0%, var(--p2) 100%);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.06), 0 8px 22px rgb(0 0 0 / 0.08);
+}
+.poster-card[data-th="light"]:hover .poster-face { box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.1), 0 14px 30px rgb(0 0 0 / 0.12); }
+.poster-face .pf-meta { color: rgb(255 255 255 / 0.85); }
+.poster-card[data-th="light"] .poster-face .pf-meta { color: rgb(68 64 60 / 0.75); }
+.poster-face .pf-badge { background: rgb(0 0 0 / 0.3); color: rgb(255 255 255 / 0.92); }
+.poster-card[data-th="light"] .poster-face .pf-badge { background: rgb(255 255 255 / 0.72); color: #57534e; }
+.poster-face .pf-badge-deep { background: rgb(0 0 0 / 0.55); }
+.poster-card[data-th="light"] .poster-face .pf-badge-deep { background: rgb(68 64 60 / 0.14); color: #44403c; }
+.poster-face .pf-title { text-shadow: 0 1px 2px rgb(0 0 0 / 0.25); }
+.poster-card[data-th="light"] .poster-face .pf-title { text-shadow: none; }
 
 /* 几何母题：按 data-g 编号切换（0-5），同一条内容永远同一枚 */
 .poster-face::after { content: ""; position: absolute; inset: 0; opacity: .8; pointer-events: none; }

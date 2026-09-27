@@ -77,15 +77,27 @@ export function hash32(str) {
 }
 export const posterGlyph = (id) => hash32(id + '#poster') % 6;
 
-/** 海报配色：以分类色相为家族，按 id 抖动色相，保证同分类也不重样 */
+/** 海报配色：以分类色相为家族，按 id 抖动色相，保证同分类也不重样。
+ *  暗色 = 深底渐变（Netflix 风）；亮色 = 淡雅低保和粉彩底 + 轻几何纹理。 */
 export function posterVars(id, catId, theme = 'dark') {
   const raw = (catMap.get(catId) || {}).color || '#57534e';
   const { h, s } = hexToHsl(raw);
   const dh = (hash32(id) % 29) - 14;
   const S = clamp(s * 0.8 + 24, 34, 64);
+  const c = catColor(catId, theme);
+  if (theme === 'light') {
+    // 白天模式：同色相家族、饱和度压到 10-28%、高明度粉彩，几何母题用 --pm 轻墨
+    const h1 = (h + dh + 360) % 360;
+    const S1 = clamp(s * 0.45, 10, 28);
+    return {
+      '--p1': hslToHex(h1, S1, 91),
+      '--p2': hslToHex((h1 + 26) % 360, clamp(S1 + 6, 14, 32), 80),
+      '--pm': 'rgba(0,0,0,0.08)',
+      '--cat': c, '--cat-soft': catSoft(catId, undefined, theme), '--cat-line': catSoft(catId, 0.42, theme),
+    };
+  }
   const p1 = hslToHex((h + dh + 360) % 360, S, 23);
   const p2 = hslToHex((h + dh + 26) % 360, clamp(S + 8, 34, 68), 48);
-  const c = catColor(catId, theme);
   return { '--p1': p1, '--p2': p2, '--pm': 'rgba(255,255,255,0.17)', '--cat': c, '--cat-soft': catSoft(catId, undefined, theme), '--cat-line': catSoft(catId, 0.42, theme) };
 }
 export function catVars(id, theme = 'dark') {
@@ -97,7 +109,12 @@ export const PLAT_LABEL = {
   youtube: 'YouTube', github: 'GitHub', wechat: '微信', zhihu: '知乎', douyin: '抖音',
   twitter: 'X', web: '网页', text: '文字',
 };
-export const platLabel = (p) => PLAT_LABEL[p] || p;
+export const PLAT_LABEL_EN = {
+  channels: 'Channels', 'wechat-mp': 'WeChat MP', xiaohongshu: 'RedNote', bilibili: 'Bilibili',
+  youtube: 'YouTube', github: 'GitHub', wechat: 'WeChat', zhihu: 'Zhihu', douyin: 'Douyin',
+  twitter: 'X', web: 'Web', text: 'Text',
+};
+export const platLabel = (p, lang = 'zh') => (lang === 'en' ? PLAT_LABEL_EN[p] : PLAT_LABEL[p]) || PLAT_LABEL_EN[p] || p;
 
 const p2 = (n) => String(n).padStart(2, '0');
 export const fmtDate = (iso) => {

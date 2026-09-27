@@ -1,7 +1,9 @@
 /* 手写图表：柱状图用 HTML/CSS，环图与热力图用 SVG（零图表库依赖） */
 import { catColor } from '@/lib/data';
+import { useT } from '@/lib/i18n';
 
 export function Bars({ items, h = 168, label = '' }) {
+  const t = useT();
   if (!items?.length) return null;
   const max = Math.max(...items.map((d) => d.count), 1);
   return (
@@ -10,7 +12,7 @@ export function Bars({ items, h = 168, label = '' }) {
         const p = Math.max(3, Math.round((d.count / max) * 100));
         const m = String(d.month || '');
         return (
-          <div key={m} className="bcol" title={`${m} · ${d.count} 条`}>
+          <div key={m} className="bcol" title={`${m} · ${t('chart_count', { n: d.count })}`}>
             <span className="font-mono text-[10px] text-[var(--color-muted)]">{d.count}</span>
             <span className="bbar" style={{ '--p': `${p}%` }} />
             <span className="text-center font-mono text-[10px] leading-tight text-[var(--color-muted)]">
@@ -24,13 +26,14 @@ export function Bars({ items, h = 168, label = '' }) {
 }
 
 export function Donut({ items, total, size = 172 }) {
+  const t = useT();
   if (!items?.length) return null;
   const cx = size / 2;
   const r = cx - 12;
   const C = 2 * Math.PI * r;
   let acc = 0;
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} role="img" aria-label="分类占比">
+    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} role="img" aria-label={t('donut_aria')}>
       <circle cx={cx} cy={cx} r={r} fill="none" stroke="var(--color-rule)" strokeWidth="17" />
       {items.map((d) => {
         const len = (d.count / (total || 1)) * C;
@@ -38,25 +41,26 @@ export function Donut({ items, total, size = 172 }) {
           <circle key={d.id} cx={cx} cy={cx} r={r} fill="none" stroke={d.color}
             strokeWidth="17" strokeDasharray={`${(len - 1.5).toFixed(2)} ${(C - len + 1.5).toFixed(2)}`}
             strokeDashoffset={(-acc).toFixed(2)} transform={`rotate(-90 ${cx} ${cx})`}>
-            <title>{`${d.name} ${d.count} 条`}</title>
+            <title>{`${d.name} · ${t('chart_count', { n: d.count })}`}</title>
           </circle>
         );
         acc += len;
         return seg;
       })}
       <text x={cx} y={cx + 4} textAnchor="middle" fontSize="34" fontFamily="var(--font-mono)" fill="var(--color-ink)" style={{ fontVariantNumeric: 'tabular-nums' }}>{total}</text>
-      <text x={cx} y={cx + 26} textAnchor="middle" fontSize="10" fontFamily="var(--font-mono)" fill="var(--color-muted)" letterSpacing="2">条收藏</text>
+      <text x={cx} y={cx + 26} textAnchor="middle" fontSize="10" fontFamily="var(--font-mono)" fill="var(--color-muted)" letterSpacing="2">{t('donut_center')}</text>
     </svg>
   );
 }
 
 export function Heat({ matrix }) {
+  const t = useT();
   const cell = 15, gap = 3;
   const flat = matrix.flat();
   const max = Math.max(...flat, 1);
   const w = 24 * (cell + gap) + 28;
   const h = 7 * (cell + gap) + 20;
-  const days = ['日', '一', '二', '三', '四', '五', '六'];
+  const days = t('days_short');
   const cells = [];
   for (let d = 0; d < 7; d++) {
     for (let hr = 0; hr < 24; hr++) {
@@ -64,12 +68,12 @@ export function Heat({ matrix }) {
       const op = v ? 0.2 + 0.8 * (v / max) : 0.07;
       cells.push(<rect key={`${d}-${hr}`} x={28 + hr * (cell + gap)} y={d * (cell + gap)} width={cell} height={cell}
         rx="2" fill="var(--color-accent)" opacity={op.toFixed(2)}>
-        <title>{`周${days[d]} ${hr}:00 · ${v} 条`}</title>
+        <title>{`${days[d]} ${hr}:00 · ${t('chart_count', { n: v })}`}</title>
       </rect>);
     }
   }
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} role="img" aria-label="收藏时间热力图" className="w-full max-w-[520px]">
+    <svg viewBox={`0 0 ${w} ${h}`} role="img" aria-label={t('heat_aria')} className="w-full max-w-[520px]">
       {days.map((day, d) => (
         <text key={day} x="0" y={d * (cell + gap) + cell - 2} fontSize="10" fontFamily="var(--font-mono)" fill="var(--color-muted)">{day}</text>
       ))}

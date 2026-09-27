@@ -17,6 +17,9 @@ const toAbs = (p, base) => (isAbsolute(p) ? p : resolvePath(base, p));
 const DATA_ROOT = toAbs(process.env.DATA_ROOT || '..', APP_DIR);
 const OUT_DIR = process.env.OUT_DIR ? toAbs(process.env.OUT_DIR, process.cwd()) : 'dist';
 
+/** 应用版本：取 app/package.json 的 version（iskill 版本号），注入 __APP_VERSION__ 供页脚展示 */
+const APP_VERSION = JSON.parse(readFileSync(join(APP_DIR, 'package.json'), 'utf8')).version;
+
 /**
  * 开发期数据服务：把实例的 data/（marks.js、build-info.json）与 media/（mp3 音频）
  * 映射到 dev server，使本地开发与构建产物行为一致。
@@ -42,6 +45,9 @@ function serveInstanceData() {
 
 export default defineConfig({
   base: './',
+  define: {
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -50,9 +56,9 @@ export default defineConfig({
       registerType: 'prompt',
       injectRegister: null, // 注册逻辑在 src/lib/pwa.jsx（协议守卫 + 自定义 Toast）
       manifest: {
-        name: '收藏册 · super-mark',
-        short_name: '收藏册',
-        description: '把微信里随手收藏的内容，变成一本可检索、可分类、有洞察的个人收藏册。',
+        name: 'Super Mark',
+        short_name: 'Super Mark',
+        description: '把随手收藏的碎片化内容，变成一本可检索、可分类、有洞察的个人收藏册。',
         lang: 'zh-CN',
         start_url: './',
         scope: './',

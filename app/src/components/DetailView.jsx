@@ -3,10 +3,9 @@ import { useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { byId, catVars, catColor, fmtDate, fmtTime, platLabel, valName, audName, no, marks as allMarks } from '@/lib/data';
 import { storeGet, storeSet, useUserVersion } from '@/lib/store';
+import { useT, getLang } from '@/lib/i18n';
 import { timeOrdered, relatedMarks } from '@/lib/filter';
 import { PosterCard } from '@/components/Poster.jsx';
-
-const STATUS_LABEL = { unread: '未读', reading: '在读', done: '已读', archived: '归档' };
 
 function DeepBlock({ title, children }) {
   return (
@@ -18,6 +17,7 @@ function DeepBlock({ title, children }) {
 }
 
 export function DetailView({ m, theme }) {
+  const t = useT();
   useUserVersion();
   const u = storeGet(m.id);
   const noteRef = useRef(null);
@@ -26,8 +26,8 @@ export function DetailView({ m, theme }) {
   useEffect(() => {
     const onKey = (e) => {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-      const t = e.target;
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      const tg = e.target;
+      if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.isContentEditable)) return;
       const ordered = timeOrdered(allMarks);
       const i = ordered.findIndex((x) => x.id === m.id);
       if (i < 0) return;
@@ -46,6 +46,7 @@ export function DetailView({ m, theme }) {
   const idx = ordered.findIndex((x) => x.id === m.id);
   const prev = idx > 0 ? ordered[idx - 1] : null;
   const next = idx >= 0 && idx < ordered.length - 1 ? ordered[idx + 1] : null;
+  const STATUS = [['unread', t('unread')], ['reading', t('reading')], ['done', t('done')], ['archived', t('archived')]];
 
   return (
     <motion.article
@@ -55,7 +56,7 @@ export function DetailView({ m, theme }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
     >
-      <a className="inline-block text-sm text-[var(--color-muted)] transition-colors hover:text-[var(--color-accent)]" href="#/flow">← 返回收藏册</a>
+      <a className="inline-block text-sm text-[var(--color-muted)] transition-colors hover:text-[var(--color-accent)]" href="#/flow">{t('back')}</a>
 
       <div className="mt-4">
         <div className="font-mono text-xs tracking-widest text-[var(--color-muted)]">NO.{no(m)}</div>
@@ -63,11 +64,11 @@ export function DetailView({ m, theme }) {
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-muted)]">
           <span className="font-mono">{fmtDate(m.sentAt)} {fmtTime(m.sentAt)}</span>
           <span style={{ color: catColor(m.category, theme) }}>{m.categoryName}{m.subCategory ? ` · ${m.subCategory}` : ''}</span>
-          <span>{platLabel(m.sourcePlatform)}</span>
+          <span>{platLabel(m.sourcePlatform, getLang())}</span>
           {m.valueType && <span>{valName(m.valueType)}</span>}
-          {(m.audience || []).length > 0 && <span>给 {m.audience.map((a) => audName(a)).join('/')}</span>}
-          {m.transcript && <span className="flag">已转写</span>}
-          {m.deep && <span className="flag">已深读</span>}
+          {(m.audience || []).length > 0 && <span>{t('to_audience', { names: m.audience.map((a) => audName(a)).join('/') })}</span>}
+          {m.transcript && <span className="flag">{t('transcribed')}</span>}
+          {m.deep && <span className="flag">{t('deepened')}</span>}
         </div>
       </div>
 
@@ -88,28 +89,28 @@ export function DetailView({ m, theme }) {
       {deep && (
         <div className="mt-8">
           <div className="mb-1 flex items-baseline justify-between">
-            <h3 className="text-base font-bold">深度解读</h3>
-            <span className="text-xs text-[var(--color-muted)]">基于转写稿的结构化深读</span>
+            <h3 className="text-base font-bold">{t('deep_title')}</h3>
+            <span className="text-xs text-[var(--color-muted)]">{t('deep_sub')}</span>
           </div>
-          {deep.thesis && <DeepBlock title="核心论点"><p className="text-sm leading-relaxed">{deep.thesis}</p></DeepBlock>}
+          {deep.thesis && <DeepBlock title={t('deep_thesis')}><p className="text-sm leading-relaxed">{deep.thesis}</p></DeepBlock>}
           {(deep.steps || []).length > 0 && (
-            <DeepBlock title="方法与步骤">
+            <DeepBlock title={t('deep_steps')}>
               <ol className="list-decimal space-y-1.5 pl-5 text-sm leading-relaxed">{deep.steps.map((s2, i) => <li key={i}>{s2}</li>)}</ol>
             </DeepBlock>
           )}
           {(deep.facts || []).length > 0 && (
-            <DeepBlock title="关键信息">
+            <DeepBlock title={t('deep_facts')}>
               <ul className="space-y-1.5 text-sm leading-relaxed">{deep.facts.map((s2, i) => <li key={i} className="flex gap-2"><span className="text-[var(--color-muted)]">·</span><span>{s2}</span></li>)}</ul>
             </DeepBlock>
           )}
-          {deep.takeaway && <DeepBlock title="可落地的结论"><p className="text-sm leading-relaxed">{deep.takeaway}</p></DeepBlock>}
+          {deep.takeaway && <DeepBlock title={t('deep_takeaway')}><p className="text-sm leading-relaxed">{deep.takeaway}</p></DeepBlock>}
           {(deep.caveats || []).length > 0 && (
-            <DeepBlock title="局限与保留">
+            <DeepBlock title={t('deep_caveats')}>
               <ul className="space-y-1.5 text-sm leading-relaxed opacity-70">{deep.caveats.map((s2, i) => <li key={i} className="flex gap-2"><span>·</span><span>{s2}</span></li>)}</ul>
             </DeepBlock>
           )}
           {(deep.related || []).length > 0 && (
-            <DeepBlock title="与已有收藏的关联">
+            <DeepBlock title={t('deep_related')}>
               <ul className="space-y-1.5 text-sm leading-relaxed">{deep.related.map((s2, i) => <li key={i} className="flex gap-2"><span>·</span><span>{s2}</span></li>)}</ul>
             </DeepBlock>
           )}
@@ -118,7 +119,7 @@ export function DetailView({ m, theme }) {
 
       {m.rawText && (
         <section className="mt-8">
-          <div className="mb-2 flex items-baseline justify-between"><h4 className="text-sm font-bold">转发原文</h4></div>
+          <div className="mb-2 flex items-baseline justify-between"><h4 className="text-sm font-bold">{t('raw_title')}</h4></div>
           <div className="raw rounded-lg border border-[var(--color-rule)] p-4">{m.rawText}</div>
         </section>
       )}
@@ -126,11 +127,11 @@ export function DetailView({ m, theme }) {
       {tr && (
         <section className="mt-8">
           <div className="mb-2 flex items-baseline justify-between">
-            <h4 className="text-sm font-bold">音频转写</h4>
-            <span className="text-xs text-[var(--color-muted)]">{tr.engine || '本地'}{tr.durationSec ? ` · ${Math.round(tr.durationSec / 60)} 分钟` : ''}{tr.audioPath ? ' · 已归档 mp3' : ''}</span>
+            <h4 className="text-sm font-bold">{t('tr_title')}</h4>
+            <span className="text-xs text-[var(--color-muted)]">{tr.engine || t('tr_local')}{tr.durationSec ? ` · ${t('tr_min', { n: Math.round(tr.durationSec / 60) })}` : ''}{tr.audioPath ? ` · ${t('tr_archived')}` : ''}</span>
           </div>
           <details className="rounded-lg border border-[var(--color-rule)] p-4">
-            <summary className="cursor-pointer text-sm text-[var(--color-muted)]">展开全文（{[...String(tr.text || '')].length} 字）</summary>
+            <summary className="cursor-pointer text-sm text-[var(--color-muted)]">{t('tr_expand', { n: [...String(tr.text || '')].length })}</summary>
             <div className="raw mt-3">{tr.text || ''}</div>
           </details>
         </section>
@@ -139,8 +140,8 @@ export function DetailView({ m, theme }) {
       {rel.length > 0 && (
         <section className="mt-10">
           <div className="mb-3 flex items-baseline justify-between">
-            <h4 className="text-sm font-bold">相关收藏</h4>
-            <span className="text-xs text-[var(--color-muted)]">同主题 · 按标签重叠度推荐</span>
+            <h4 className="text-sm font-bold">{t('related')}</h4>
+            <span className="text-xs text-[var(--color-muted)]">{t('related_sub')}</span>
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-6 xl:grid-cols-4">
             {rel.map((x, i) => <PosterCard key={x.id} m={x} theme={theme} index={i} animate={false} />)}
@@ -149,20 +150,20 @@ export function DetailView({ m, theme }) {
       )}
 
       {tags.length > 0 && (
-        <div className="mt-8 flex flex-wrap gap-2">{tags.map((t) => <span key={t} className="tag">{t}</span>)}</div>
+        <div className="mt-8 flex flex-wrap gap-2">{tags.map((tg) => <span key={tg} className="tag">{tg}</span>)}</div>
       )}
 
       <div className="mt-8 flex flex-wrap items-center gap-2 border-t border-[var(--color-rule)] pt-6">
-        {m.url && <a className="rounded-full bg-[var(--color-accent)] px-4 py-1.5 text-sm font-bold text-[var(--color-accent-ink)]" href={m.url} target="_blank" rel="noopener">打开原内容 ↗</a>}
+        {m.url && <a className="rounded-full bg-[var(--color-accent)] px-4 py-1.5 text-sm font-bold text-[var(--color-accent-ink)]" href={m.url} target="_blank" rel="noopener">{t('open_original')}</a>}
         <button onClick={() => storeSet(m.id, { starred: !storeGet(m.id).starred })}
           className={`rounded-full border px-4 py-1.5 text-sm ${u.starred ? 'border-amber-400 text-amber-400' : 'border-[var(--color-rule)]'}`}>
-          {u.starred ? '★ 已收藏' : '☆ 加星'}
+          {u.starred ? t('starred_y') : t('add_star')}
         </button>
-        {Object.entries(STATUS_LABEL).map(([k, v]) => (
+        {STATUS.map(([k, v]) => (
           <button key={k} onClick={() => storeSet(m.id, { readStatus: k })}
             className={`rounded-full border px-3 py-1.5 text-sm ${u.readStatus === k ? 'border-[var(--color-accent)] bg-[var(--color-accent)] font-bold text-[var(--color-accent-ink)]' : 'border-[var(--color-rule)]'}`}>{v}</button>
         ))}
-        <span className="ml-2 text-xs text-[var(--color-muted)]">评分</span>
+        <span className="ml-2 text-xs text-[var(--color-muted)]">{t('rating')}</span>
         {[1, 2, 3, 4, 5].map((n) => (
           <button key={n} onClick={() => storeSet(m.id, { rating: n })}
             className={`h-7 w-7 rounded-full border font-mono text-xs ${(u.rating || 0) >= n ? 'border-[var(--color-accent)] bg-[var(--color-accent)] font-bold text-[var(--color-accent-ink)]' : 'border-[var(--color-rule)] text-[var(--color-muted)]'}`}>{n}</button>
@@ -171,7 +172,7 @@ export function DetailView({ m, theme }) {
           ref={noteRef}
           defaultValue={u.note || ''}
           onBlur={(e) => { if (e.target.value !== (u.note || '')) storeSet(m.id, { note: e.target.value }); }}
-          placeholder="写下你的想法、决定、或者这条为什么值得留着…"
+          placeholder={t('note_ph')}
           className="mt-3 w-full rounded-lg border border-[var(--color-rule)] bg-transparent p-3 text-sm outline-none focus:border-[var(--color-accent)]"
           rows={2}
         />
@@ -181,13 +182,13 @@ export function DetailView({ m, theme }) {
         <nav className="mt-8 mb-4 grid grid-cols-2 gap-4 border-t border-[var(--color-rule)] pt-6">
           <div>{prev && (
             <a href={`#/item/${encodeURIComponent(prev.id)}`} className="block min-w-0 group">
-              <span className="text-xs text-[var(--color-muted)]">← 较新</span>
+              <span className="text-xs text-[var(--color-muted)]">{t('newer')}</span>
               <b className="mt-1 block truncate text-sm group-hover:text-[var(--color-accent)]">{prev.title}</b>
             </a>
           )}</div>
           <div className="text-right">{next && (
             <a href={`#/item/${encodeURIComponent(next.id)}`} className="block min-w-0 group">
-              <span className="text-xs text-[var(--color-muted)]">较旧 →</span>
+              <span className="text-xs text-[var(--color-muted)]">{t('older')}</span>
               <b className="mt-1 block truncate text-sm group-hover:text-[var(--color-accent)]">{next.title}</b>
             </a>
           )}</div>
