@@ -50,20 +50,15 @@ function FilterPills({ route, f, setF, viewMode, setViewMode, theme, counts }) {
   };
   return (
     <>
+      {/* 分类行 */}
       <div className="flex flex-wrap items-center gap-2">
         {cats.map((c) => (
           <Pill key={c.id} on={f.cats.has(c.id)} onClick={() => toggleCat(c.id)}>
             <Dot color={catColor(c.id, theme)} />{c.name}<span className="ml-1 font-mono text-xs opacity-70">{counts[c.id]}</span>
           </Pill>
         ))}
-        <span className="flex-1" />
-        <span className="flex overflow-hidden rounded-full border border-[var(--color-rule)]" role="group" aria-label={t('view_poster') + ' / ' + t('view_list')}>
-          {[['poster', t('view_poster')], ['list', t('view_list')]].map(([v, label]) => (
-            <button key={v} onClick={() => setViewMode(v)}
-              className={`px-3 py-1 text-sm ${viewMode === v ? 'bg-[var(--color-accent)] font-bold text-[var(--color-accent-ink)]' : 'text-[var(--color-muted)]'}`}>{label}</button>
-          ))}
-        </span>
       </div>
+      {/* 状态行：清除 / 价值类型 / 标注 */}
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {act > 0 && <Pill ghost onClick={() => setF({ ...makeFilterState(), q: f.q })}>{t('clear')}</Pill>}
         {act > 0 && <Sep />}
@@ -77,10 +72,20 @@ function FilterPills({ route, f, setF, viewMode, setViewMode, theme, counts }) {
         {[['unread', t('unread')], ['reading', t('reading')], ['done', t('done')]].map(([k, v]) => (
           <Pill key={k} on={f.status === k} onClick={() => setF({ ...f, status: f.status === k ? '' : k })}>{v}</Pill>
         ))}
-        <Sep />
-        {[['time', t('sort_time')], ['rating', t('sort_rating')], ['category', t('sort_category')]].map(([k, v]) => (
-          <Pill key={k} on={f.sort === k} onClick={() => setF({ ...f, sort: k })}>{v}</Pill>
-        ))}
+      </div>
+      {/* 排序（左）与显示模式（右）：单独一行，手机端不再挤在一起 */}
+      <div className="mt-2 flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {[['time', t('sort_time')], ['rating', t('sort_rating')], ['category', t('sort_category')]].map(([k, v]) => (
+            <Pill key={k} on={f.sort === k} onClick={() => setF({ ...f, sort: k })}>{v}</Pill>
+          ))}
+        </div>
+        <span className="flex shrink-0 overflow-hidden rounded-full border border-[var(--color-rule)]" role="group" aria-label={t('view_poster') + ' / ' + t('view_list')}>
+          {[['poster', t('view_poster')], ['list', t('view_list')]].map(([v, label]) => (
+            <button key={v} onClick={() => setViewMode(v)}
+              className={`px-3 py-1 text-sm ${viewMode === v ? 'bg-[var(--color-accent)] font-bold text-[var(--color-accent-ink)]' : 'text-[var(--color-muted)]'}`}>{label}</button>
+          ))}
+        </span>
       </div>
     </>
   );
