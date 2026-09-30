@@ -48,10 +48,12 @@ export function findYtDlp() {
   return cands.find((p) => { try { return fs.existsSync(p); } catch { return false; } }) || null;
 }
 
+// 探测链：PATH → Apple Silicon brew → Intel brew（Homebrew 默认路径随架构不同）
 export function findFfmpeg() {
   let which = null;
   try { which = execFileSync('/usr/bin/which', ['ffmpeg'], { encoding: 'utf8' }).trim() || null; } catch { /* ignore */ }
-  return which || (fs.existsSync('/opt/homebrew/bin/ffmpeg') ? '/opt/homebrew/bin/ffmpeg' : null);
+  const cands = [which, '/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg'].filter(Boolean);
+  return cands.find((p) => { try { return fs.existsSync(p); } catch { return false; } }) || null;
 }
 
 export function probeCapabilities() {
