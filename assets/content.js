@@ -102,27 +102,14 @@ window.PROMO = {
       steps: {
         eyebrow: "上手",
         title: "三步跑起来",
-        sub: "命令由助手代为执行，你只要说一句「整理我收藏的微信内容」。",
+        sub: "命令由 agent 跑，你只说要什么、看结果。",
         items: [
-          {
-            title: "交给 AI 装",
-            desc: "把提示词粘进对话框，agent 会自己拉代码、读文档，再告诉你怎么用。",
-            codeKey: "install"
-          },
-          {
-            title: "初始化一个收藏册",
-            desc: "建出一个实例目录（data/ · media/ · inbox/），之后所有内容都往里长。",
-            codeName: "bash",
-            code: "node <SKILL_DIR>/scripts/mark.mjs init ~/WorkBuddy/SuperMark"
-          },
-          {
-            title: "把聊天记录导进来",
-            desc: "转发到文件传输助手的聊天记录存成 txt，一条命令解析去重、结构化入库。",
-            codeName: "bash",
-            code: "node <SKILL_DIR>/scripts/mark.mjs ingest ~/WorkBuddy/SuperMark --file chat.txt"
-          }
+          { title: "交给 AI 装", desc: "把这句话粘进对话框，agent 会自己拉代码、读文档，再告诉你用法。", codeKey: "install" },
+          { title: "说要收什么", desc: "导入、去重、分类打标、生成页面都由它跑；聊天记录存成 txt 给它就行。", codeName: "prompt", code: "把我收藏的这些微信内容做成一本收藏册，按主题分类，能检索。" },
+          { title: "翻收藏册", desc: "生成的是网页应用，你打开就能按分类检索、看它打的标签和洞察。" }
         ]
       },
+
 
       faq: {
         eyebrow: "问答",
@@ -232,27 +219,14 @@ window.PROMO = {
       steps: {
         eyebrow: "Get started",
         title: "Up and running in three steps",
-        sub: "Your assistant runs the commands — you just say \"sort out what I saved in WeChat\".",
+        sub: "The agent runs the commands. You say what you want and check the result.",
         items: [
-          {
-            title: "Let your agent install it",
-            desc: "Paste the line into the chat — it clones the repo, reads the docs, and tells you how to use it.",
-            codeKey: "install"
-          },
-          {
-            title: "Initialise a library",
-            desc: "Creates an instance directory (data/ · media/ · inbox/) that everything else grows into.",
-            codeName: "bash",
-            code: "node <SKILL_DIR>/scripts/mark.mjs init ~/WorkBuddy/SuperMark"
-          },
-          {
-            title: "Ingest your chat log",
-            desc: "Save what you forwarded to File Transfer as a .txt; one command parses, dedupes and stores it.",
-            codeName: "bash",
-            code: "node <SKILL_DIR>/scripts/mark.mjs ingest ~/WorkBuddy/SuperMark --file chat.txt"
-          }
+          { title: "Let your agent install it", desc: "Paste the line into the chat — it clones the repo, reads the docs, and tells you how to use it.", codeKey: "install" },
+          { title: "Say what to collect", desc: "Importing, dedupe, tagging and page generation all run on its side. Export the chat history to a txt and hand it over.", codeName: "prompt", code: "Turn the WeChat stuff I saved into a searchable collection, grouped by theme." },
+          { title: "Browse the collection", desc: "It's a web app — open it to search by category and read the tags and insights it produced." }
         ]
       },
+
 
       faq: {
         eyebrow: "FAQ",
