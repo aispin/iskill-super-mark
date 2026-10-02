@@ -38,16 +38,19 @@ window.PROMO = {
         meta2: "数据全本地",
         meta3: "PWA 可离线"
       },
-      terminal: {
-        title: "zsh — iskill-super-mark",
-        lines: [
-          [{ t: "$ ", c: "p" }, { t: "node <SKILL_DIR>/scripts/mark.mjs init ~/WorkBuddy/SuperMark", c: "k" }],
-          [{ t: "✓ ", c: "p" }, { t: "实例已建：data/ · media/ · inbox/", c: "s" }],
-          [{ t: "$ ", c: "p" }, { t: "node <SKILL_DIR>/scripts/mark.mjs caps", c: "k" }],
-          [{ t: "✓ ", c: "p" }, { t: "yt-dlp 就绪 · ffmpeg 就绪 · VoiceBox 可连", c: "s" }],
-          [{ t: "  ", c: "" }, { t: "→ 现在能做到：抓音频 + 本机转写 + 深度解读", c: "c" }]
+      chat: {
+        title: "AI Agent · 对话现场",
+        status: "在线",
+        userLabel: "你",
+        agentLabel: "AI",
+        messages: [
+          { role: "user", text: "把我收藏的这些微信内容做成一本收藏册" },
+          { role: "agent", text: "导入聊天记录 → 解析去重 → AI 分类打标 → 生成网页应用：按分类检索、看标签与洞察，视频音频也能抓下来转成 mp3。", tag: "已导入 342 条" },
+          { role: "user", text: "能搜到三个月前那条吗？" },
+          { role: "agent", text: "能——全文检索 + 分类筛选；洞察是跨条目聚合出来的，不是单条摘要。" }
         ]
       },
+
 
       stats: [
         { value: "11", label: "个命令覆盖整条链路", note: "init / ingest / add / analyze / build / report / preview / fetch / transcribe / deep / caps" },
@@ -155,16 +158,19 @@ window.PROMO = {
         meta2: "All data local",
         meta3: "PWA offline"
       },
-      terminal: {
-        title: "zsh — iskill-super-mark",
-        lines: [
-          [{ t: "$ ", c: "p" }, { t: "node <SKILL_DIR>/scripts/mark.mjs init ~/WorkBuddy/SuperMark", c: "k" }],
-          [{ t: "✓ ", c: "p" }, { t: "instance created: data/ · media/ · inbox/", c: "s" }],
-          [{ t: "$ ", c: "p" }, { t: "node <SKILL_DIR>/scripts/mark.mjs caps", c: "k" }],
-          [{ t: "✓ ", c: "p" }, { t: "yt-dlp ready · ffmpeg ready · VoiceBox reachable", c: "s" }],
-          [{ t: "  ", c: "" }, { t: "→ you can now: fetch audio + transcribe locally + deep-read", c: "c" }]
+      chat: {
+        title: "AI Agent · live session",
+        status: "online",
+        userLabel: "You",
+        agentLabel: "AI",
+        messages: [
+          { role: "user", text: "Turn the WeChat stuff I saved into a collection" },
+          { role: "agent", text: "Import the chat export → parse and dedupe → AI tagging → generate the web app: search by category, read tags and insights. Video and audio get fetched and converted to mp3 too.", tag: "342 entries imported" },
+          { role: "user", text: "Can I find that one from three months ago?" },
+          { role: "agent", text: "Yes — full-text search plus category filters. The insights are aggregated across entries, not per-item summaries." }
         ]
       },
+
 
       stats: [
         { value: "11", label: "commands covering the whole chain", note: "init / ingest / add / analyze / build / report / preview / fetch / transcribe / deep / caps" },
